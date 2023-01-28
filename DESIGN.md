@@ -1,21 +1,16 @@
-# - Design Document for LocoQuest
+# Design Document for LocoQuest
 
-1)  Introduction to our app
+- Introduction
+    - LocoQuest is an Android app developed in Kotlin that utilizes benchmarks provided by the National Geodetic Survey to offer an interactive scavenger hunt experience. With this app, you can take your adventure anywhere you desire and challenge yourself to find hidden treasures using your device's geolocation capabilities. The National Geodetic Survey (NGS) is an organization that maintains a network of benchmarks across the United States. These benchmarks are located on stable ground, such as on the foundation of a building or on a rock outcropping, and are used to measure the Earth's curvature and provide a reference point for mapping and surveying. The NGS has been collecting data and maintaining these benchmarks for over 200 years and now, with LocoQuest, you can use this network to explore new places and take upon a unique scavenger hunt.
 
-2) Storyboard (screen mockups): Invision, FluidUI, Powerpoint, paint, etc... will be fine.
+- Storyboard (screen mockups): Invision, FluidUI, Powerpoint, paint, etc... will be fine.
 
-3) 2-4 Functional Requirements in the format (fill in the square brackets with your own words):
+- 2-4 Functional Requirements in the format (fill in the square brackets with your own words):
+    - 1). As an explorer on LocoQuest, given I've already authorized permissions for the app to use my devices geolocation capabilities within Android, I want geolocation to be activated and display my current location on my device when I open the app from a clean-state and get sent to the "landing page," also known as the map.
+    - 2). As a scavenger of LocoQuest, given there is no connectivity on the device, the app will warn the user that there is not internet connection and that landmarks may not be up to date. This is because GPS can work without the internet, but the up-to-date JSON data won't be locally imported onto the user's device, which can give them out-of-date landmarks, when I open the app or the app refreshes as this is when JSON data from the device locally to the database is checked.
+    - 3). As an explorer on LocoQuest, given GPS is turned off on the device, the map will turn darker, and the app will warn the user that GPS is not enabled, which will throw off the calculations of the entire app despite the data stored locally on the device. This should happen at any point GPS is turned off and the app is turned on no matter the circumstances. 
 
-    As a [User]
-    I want [Feature]
-    So that I can [Do something]
-    Elaborate each of these with several examples in Given When Then format:
-        Given [Prerequisite]
-        When [Series of Steps]
-        Then [Expected Result]
-    Be very specific on Given When Thens, as they should describe test parameters. Describe a specific set of outputs for a given set of inputs.  In other words, "Given that shoe polish is normally $2.89, and there is a buy one get one free offer, When the user purchases two shoe polishes, Then the final cost will be $2.89",  is much better than, "Given that the user selects an item, and the item is on sale, then the item is sold at the sale price", because it references a specific item, with specific input and output price.
-    Notes:
-        The Given/When/Then syntax will form the basis of our unit tests.  Consider different cases: good data, bad data, multiple sets of data, etc.
+
 
 4) Class Diagram
 
@@ -43,6 +38,10 @@
                 The Product Owner/Scrum Master/DevOps person on your team should select stories to play for each sprint, from the list of available stories in the Product Backlog.
         As long as you have the tasks in GitHub Projects, under Projects, and associated with milestones, you do not need to repeat them in the design doc.  I'll look at the Project and Milestone view to see them.
 
-8) Scrum Roles, and who will fill those roles
+- Scrum Roles, and who will fill those roles
+    - Product Owner:
+    - Scrum Master:
+    - Development Team: Levi Huff
 
-9) Communication tool you will use for your 8:00 Sunday group stand up (Zoom, Teams, etc.)  If you choose a different tool and/or different time, that's fine, just indicate it in the document.
+- Communication tool you will use for your 8:00 Sunday group stand up (Zoom, Teams, etc.)  If you choose a different tool and/or different time, that's fine, just indicate it in the document.
+    - We will be using Teams and have decided to be flexible with everyone's time, for example some will meet on Saturday evening, and others are flexible with almost anytime that works for the group since they're all online this semester.
