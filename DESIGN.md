@@ -20,9 +20,8 @@
 
     - ![image](https://user-images.githubusercontent.com/100445409/215296810-21949c79-ca17-41f0-8f75-0233242b2453.png)
 
-- Class Diagram Description
-
-    -One or two lines for each class to describe  use of interfaces, JME classes, Dalvik (Android) classes and resources, interfaces, etc.  Don't worry about putting more than a few words to each class; this does not need to be thorough.
+    - Class Diagram Description
+       - One or two lines for each class to describe  use of interfaces, JME classes, Dalvik (Android) classes and resources, interfaces, etc.  Don't worry about putting more than a few words to each class; this does not need to be thorough.
     
     - Map Activity
         - Handles user interactions of the map, including zooming and panning, and displaying markers for benchmarks/scavenging locations.
@@ -52,17 +51,17 @@
         - The "MapActivity" class has an association relationship with "Benchmark", "ScavengingLocation", "UserProfile", "ScavengingLocationDatabase" and "ScavengingItemDatabase" classes. The "ScavengingLocation" class has an association relationship with "ScavengingItem" class. The "UserProfile" class has an association relationship with "ScavengingHistory" class.
 
 
-- A Product Backlog
+    - A Product Backlog
         https://github.com/users/lh1207/projects/2/views/1
 
-- A scrum or kanban board, using GitHub projects (preferred), Trello, Scrumy.com, or something similar, that contains: A milestone for Sprint #1, with tasks associated.
+    - A scrum or kanban board, using GitHub projects (preferred), Trello, Scrumy.com, or something similar, that contains: A milestone for Sprint #1, with tasks associated.
         - Milestones and Tasks for Sprint #1: https://github.com/users/lh1207/projects/1/views/1
-        -Tasked stories for Sprint #1: https://github.com/lh1207/LocoQuest/projects?query=is%3Aopen 
+        - Tasked stories for Sprint #1: https://github.com/lh1207/LocoQuest/projects?query=is%3Aopen 
+    
+    - Scrum Roles, and who will fill those roles
+        - Product Owner: Eric Miller 
+        - Scrum Master: Sam Dappen
+        - Development Team: Levi Huff, Derrick Adkins, and William Bohman
 
-- Scrum Roles, and who will fill those roles
-    - Product Owner: Eric Miller 
-    - Scrum Master: Sam Dappen
-    - Development Team: Levi Huff, Derrick Adkins, and William Bohman
-
-- Communication tool you will use for your 8:00 Sunday group stand up (Zoom, Teams, etc.)  If you choose a different tool and/or different time, that's fine, just indicate it in the document.
-    - We will be using Teams and have decided to be flexible with everyone's time, for example some will meet on Saturday evening, and others are flexible with almost anytime that works for the group since they're all online this semester.
+    - Communication tool you will use for your 8:00 Sunday group stand up (Zoom, Teams, etc.)  If you choose a different tool and/or different time, that's fine, just indicate it in the document.
+        - We will be using Teams and have decided to be flexible with everyone's time, for example some will meet on Saturday evening, and others are flexible with almost anytime that works for the group since they're all online this semester.
