@@ -3,7 +3,12 @@
 - Introduction
     - LocoQuest is an Android app developed in Kotlin that utilizes benchmarks provided by the National Geodetic Survey to offer an interactive scavenger hunt experience. With this app, you can take your adventure anywhere you desire and challenge yourself to find hidden treasures using your device's geolocation capabilities. The National Geodetic Survey (NGS) is an organization that maintains a network of benchmarks across the United States. These benchmarks are located on stable ground, such as on the foundation of a building or on a rock outcropping, and are used to measure the Earth's curvature and provide a reference point for mapping and surveying. The NGS has been collecting data and maintaining these benchmarks for over 200 years and now, with LocoQuest, you can use this network to explore new places and take upon a unique scavenger hunt.
 
-- Storyboard (screen mockups): Invision, FluidUI, Powerpoint, paint, etc... will be fine.
+- Storyboard (screen mockups):
+
+    - ![image](ScreenMockups\login_screen.png)
+    - ![image](ScreenMockups\map_screen.png)
+    - ![image](ScreenMockups\history_screen.png)
+
 
 - 2-4 Functional Requirements in the format (fill in the square brackets with your own words):
     - 1). As an explorer on LocoQuest, given I've already authorized permissions for the app to use my devices geolocation capabilities within Android, I want geolocation to be activated and display my current location on my device when I open the app from a clean-state and get sent to the "landing page," also known as the map.
