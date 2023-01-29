@@ -11,14 +11,41 @@
     - 3). As an explorer on LocoQuest, given GPS is turned off on the device, the map will turn darker, and the app will warn the user that GPS is not enabled, which will throw off the calculations of the entire app despite the data stored locally on the device. This should happen at any point GPS is turned off and the app is turned on no matter the circumstances. 
 
 
+- Class Diagram
 
-4) Class Diagram
+    - ![image](https://user-images.githubusercontent.com/100445409/215296810-21949c79-ca17-41f0-8f75-0233242b2453.png)
 
-    ![image](https://user-images.githubusercontent.com/100445409/215296810-21949c79-ca17-41f0-8f75-0233242b2453.png)
+- Class Diagram Description
 
-5) Class Diagram Description
+    -One or two lines for each class to describe  use of interfaces, JME classes, Dalvik (Android) classes and resources, interfaces, etc.  Don't worry about putting more than a few words to each class; this does not need to be thorough.
+    
+    - Map Activity
+        - Handles user interactions of the map, including zooming and panning, and displaying markers for benchmarks/scavenging locations
 
-    One or two lines for each class to describe  use of interfaces, JME classes, Dalvik (Android) classes and resources, interfaces, etc.  Don't worry about putting more than a few words to each class; this does not need to be thorough.
+    - Benchmark
+        - Child of MapActivity; represents bookmark location, which includes name, coordinates, and description
+
+    - ScavengingLocation
+        - Child of MapActivity;  represents scavenging location
+
+    - ScavengingItem
+        -
+
+    - UserProfile
+        -
+        
+    - ScavengingHistory
+        -
+       
+    - ScavengingLocationDatabase
+        -
+
+    - ScavengingItemDatabase
+        -
+
+    - Overall...
+        - The "MapActivity" class has an association relationship with "Benchmark", "ScavengingLocation", "UserProfile", "ScavengingLocationDatabase" and "ScavengingItemDatabase" classes. The "ScavengingLocation" class has an association relationship with "ScavengingItem" class. The "UserProfile" class has an association relationship with "ScavengingHistory" class.
+
 
 6) A Product Backlog
 
