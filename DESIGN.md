@@ -5,9 +5,9 @@
 
 - Storyboard (screen mockups):
 
-    - ![image](ScreenMockups\login_screen.png)
-    - ![image](ScreenMockups\map_screen.png)
-    - ![image](ScreenMockups\history_screen.png)
+    - ![image](https://github.com/lh1207/LocoQuest/blob/main/ScreenMockups/login_screen.png?raw=true)
+    - ![image](https://github.com/lh1207/LocoQuest/blob/main/ScreenMockups/map_screen.png?raw=true)
+    - ![image](https://github.com/lh1207/LocoQuest/blob/main/ScreenMockups/history_screen.png?raw=true)
 
 
 - 2-4 Functional Requirements in the format (fill in the square brackets with your own words):
