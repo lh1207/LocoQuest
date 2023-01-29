@@ -14,8 +14,7 @@
 
 4) Class Diagram
 
-    Show data classes (DTOs), Activities, Fragments, MVVM, etc.
-    I use ArgoUML to model classes in a diagram.  Other tools work as well.
+    ![image](https://user-images.githubusercontent.com/100445409/215296810-21949c79-ca17-41f0-8f75-0233242b2453.png)
 
 5) Class Diagram Description
 
