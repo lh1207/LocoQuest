@@ -20,28 +20,28 @@
     -One or two lines for each class to describe  use of interfaces, JME classes, Dalvik (Android) classes and resources, interfaces, etc.  Don't worry about putting more than a few words to each class; this does not need to be thorough.
     
     - Map Activity
-        - Handles user interactions of the map, including zooming and panning, and displaying markers for benchmarks/scavenging locations
+        - Handles user interactions of the map, including zooming and panning, and displaying markers for benchmarks/scavenging locations.
 
     - Benchmark
-        - Child of MapActivity; represents bookmark location, which includes name, coordinates, and description
+        - Child of MapActivity; represents bookmark location, which includes name, coordinates, and description.
 
     - ScavengingLocation
-        - Child of MapActivity;  represents scavenging location
+        - Child of MapActivity;  represents scavenging location includes information such as its coordinates, name, and a list of scavenging items that can be found there.
 
     - ScavengingItem
-        -
+        - Child of ScavengingLocation; represents an item that can be found at a scavenging location, and includes information such as its name and description.
 
     - UserProfile
-        -
+        - Child of MapActivity; represents the user's profile, and includes information such as their username, scavenging locations visited, and scavenging items found.
         
     - ScavengingHistory
-        -
+        - Child of UserProfile; represents the user's scavenging history, and includes information such as the scavenging locations visited, and scavenging items found.
        
     - ScavengingLocationDatabase
-        -
+        - Child of MapActivity; represents the scavenging location database, and includes functionality for adding, removing, and updating scavenging locations, as well as retrieving a list of all scavenging locations.
 
     - ScavengingItemDatabase
-        -
+        - Child of MapActivity; represents the scavenging item database, and includes functionality for adding, removing, and updating scavenging items, as well as retrieving a list of all scavenging items.
 
     - Overall...
         - The "MapActivity" class has an association relationship with "Benchmark", "ScavengingLocation", "UserProfile", "ScavengingLocationDatabase" and "ScavengingItemDatabase" classes. The "ScavengingLocation" class has an association relationship with "ScavengingItem" class. The "UserProfile" class has an association relationship with "ScavengingHistory" class.
