@@ -53,6 +53,7 @@
         -Each story should be a separate Project in GitHub.  The title of the project should be the name of the story.
             -As long as you have these stories listed as Projects in GitHub, I can look at your projects to see your backlog.  No need to repeat it in the design document.
         -There should be more stories than you will finish in one sprint.  The Product Owner can choose from this list, which stories to complete in each sprint.
+        https://github.com/users/lh1207/projects/2/views/1
 
 - 7) A scrum or kanban board, using GitHub projects (preferred), Trello, Scrumy.com, or something similar, that contains:
 A milestone for Sprint #1, with tasks associated.
