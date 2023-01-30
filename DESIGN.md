@@ -6,6 +6,7 @@
 - Storyboard (screen mockups):
 
     - ![image](https://github.com/lh1207/LocoQuest/blob/main/ScreenMockups/login_screen.png?raw=true) 
+    - This will be via FireBase
     - ![image](https://github.com/lh1207/LocoQuest/blob/main/ScreenMockups/map_screen.png?raw=true)
     - ![image](https://github.com/lh1207/LocoQuest/blob/main/ScreenMockups/history_screen.png?raw=true)
 
