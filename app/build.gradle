@@ -7,7 +7,7 @@ android {
     compileSdk 32
 
     defaultConfig {
-        applicationId "app.plantdiary.individualassignment304832"
+        applicationId "com.locoquest.app"
         minSdk 30
         targetSdk 32
         versionCode 1

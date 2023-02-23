@@ -1,4 +1,4 @@
-package com.example.locoquest
+package com.locoquest.app
 
 class RetrofitClientInstance {
 }
