@@ -14,6 +14,17 @@ Explore LocoQuest and start your adventure today!
 ![image](https://user-images.githubusercontent.com/100445409/221301453-a6a2fe92-ed45-47a8-b9bc-bdd27a5b6e23.png)
 
 # Functional Requirements
+Given I've already authorized permissions for the app to use my device's geolocation capabilities within Android,
+When I open LocoQuest from a clean-state and get sent to the "landing page," also known as the map,
+Then geolocation shall be activated and display my current location on my device, so that I can find my current location and start my scavenger hunt.
+
+Given there is no internet connectivity on my device,
+When I open LocoQuest or the app refreshes,
+Then the app shall display a warning message that alerts me that landmarks may not be up-to-date.
+
+Given GPS is turned off on my device,
+When I open LocoQuest at any point,
+Then the map should turn darker, and the app should warn me that GPS is not enabled, which will throw off the calculations of the entire app despite the data stored locally on the device.
 
 # UML Class Diagram
 
