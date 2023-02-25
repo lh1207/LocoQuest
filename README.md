@@ -37,11 +37,13 @@ Milestones and Tasks for Sprint 1
   - Allow the user, when they open the app, to the see the map right away so that they can interact with it despite not being logged in
   - Implement JSON data of benchmarks from NGS to allow for Scavenging item and location parsing functionality
   - Implement Firebase to allow user to register/login and view profile and history
+  - Design app through revisioned design document
 
 Tasked Stories for Sprint 1
-  - https://github.com/users/lh1207/projects/3/views/1
-  - https://github.com/users/lh1207/projects/8/views/1
-  - https://github.com/users/lh1207/projects/6/views/1
+  - https://github.com/users/lh1207/projects/3/
+  - https://github.com/users/lh1207/projects/8/
+  - https://github.com/users/lh1207/projects/6/
+  - https://github.com/users/lh1207/projects/9/
 
 Scrum Roles, and who will fill those roles
   - Product Owner: Eric Miller
