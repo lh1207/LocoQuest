@@ -28,6 +28,8 @@ Then the map should turn darker, and the app should warn me that GPS is not enab
 
 # UML Class Diagram
 
+![image](https://user-images.githubusercontent.com/100445409/221331325-a4457e5a-6814-4841-8cae-2511a90700fb.png)
+
 # Product Backlog and Sprint Goals
 
 Product Backlog
