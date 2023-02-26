@@ -30,13 +30,13 @@ Then the map should turn darker, and the app should warn me that GPS is not enab
 
 ![image](https://user-images.githubusercontent.com/100445409/221331325-a4457e5a-6814-4841-8cae-2511a90700fb.png)
 
-    - UserActivity, MainViewModel, MainActivity, ContextAwareViewModel, and BenchmarkInfoActivity are all related to the user interface of the app. They are responsible for displaying information to the user and receiving input from them.
-    - RetrofitClientInstance is a class used to make HTTP requests to a server using the Retrofit library.
-    - Benchmark.kt, LocationDetails.kt, User.kt, and Photo.kt are data transfer objects (DTOs) used to represent data that is being sent or received by the app.
-    - IBenchmarkDAO and ILocalBenchmarkDAO are interfaces related to data access. They define the contract for accessing benchmark data from different sources.
-    - BenchmarkDatabase is a class that represents a local database used by the app to store benchmark data. It is implemented using the Room library.
-    - BenchmarkService.kt is a class that provides a service related to benchmarks. It interacts with a remote server to retrieve or update benchmark data.
-    -RoomDatabase is a class provided by the Android framework that is used to create and manage local databases. It is used as the underlying implementation for BenchmarkDatabase.
+   - UserActivity, MainViewModel, MainActivity, ContextAwareViewModel, and BenchmarkInfoActivity are all related to the user interface of the app. They are responsible for displaying information to the user and receiving input from them.
+   - RetrofitClientInstance is a class used to make HTTP requests to a server using the Retrofit library.
+   - Benchmark.kt, LocationDetails.kt, User.kt, and Photo.kt are data transfer objects (DTOs) used to represent data that is being sent or received by the app.
+   - IBenchmarkDAO and ILocalBenchmarkDAO are interfaces related to data access. They define the contract for accessing benchmark data from different sources.
+   - BenchmarkDatabase is a class that represents a local database used by the app to store benchmark data. It is implemented using the Room library.
+   - BenchmarkService.kt is a class that provides a service related to benchmarks. It interacts with a remote server to retrieve or update benchmark data.
+   -RoomDatabase is a class provided by the Android framework that is used to create and manage local databases. It is used as the underlying implementation for BenchmarkDatabase.
 
 # Product Backlog and Sprint Goals
 
