@@ -10,3 +10,6 @@ data class Benchmark(
     val elevation: Double,
     val longitude: Double,
     val latitude: Double, ) // based on class diagram
+
+
+
