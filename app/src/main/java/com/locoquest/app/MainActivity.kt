@@ -12,13 +12,16 @@ import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.android.gms.common.SignInButton
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), OnMapReadyCallback{
     private val TAG : String = MainActivity::class.java.name
     private lateinit var auth: FirebaseAuth
     private val REQ_ONE_TAP = 0
@@ -116,6 +119,8 @@ class MainActivity : AppCompatActivity() {
                     Log.d(TAG, e.localizedMessage)
                 }
         }
+        val mapFragment = supportFragmentManager.findFragmentById(R.id.maps) as SupportMapFragment
+        mapFragment.getMapAsync(this)
     }
 
     override fun onStart() {
@@ -126,5 +131,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun signOut(){
         Firebase.auth.signOut()
+    }
+
+    override fun onMapReady(p0: GoogleMap) {
+
     }
 }
