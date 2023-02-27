@@ -28,7 +28,8 @@ class BenchmarkServiceTest {
                 "name": "Mount Everest",
                 "latitude": 27.988056,
                 "longitude": 86.925278,
-                "elevation": 8848.86
+                "elevation": 8848.86,
+                "coordinates": "27.988056, 86.925278"
             }
         """.trimIndent()
 
@@ -39,6 +40,7 @@ class BenchmarkServiceTest {
         assertNotNull(benchmark)
         assertEquals("ABC123", benchmark.id)
         assertEquals("Mount Everest", benchmark.name)
+        assertEquals("27.988056, 86.925278", benchmark.coordinates)
         assertEquals(27.988056, benchmark.latitude, 0.001)
         assertEquals(86.925278, benchmark.longitude, 0.001)
         assertEquals(8848.86, benchmark.elevation, 0.001)
@@ -50,25 +52,13 @@ class BenchmarkServiceTest {
             return Benchmark(
                 id = "ABC123",
                 name = "Mount Everest",
+                coordinates = "27.988056, 86.925278",
                 latitude = 27.988056,
                 longitude = 86.925278,
-                elevation = 8848.86
-            )
-        }
-
-        private fun Benchmark(
-            id: String,
-            name: String,
-            latitude: Double,
-            longitude: Double,
-            elevation: Double
-        ): Benchmark {
-            return Benchmark(
-                id = id,
-                name = name,
-                latitude = latitude,
-                longitude = longitude,
-                elevation = elevation
+                elevation = 8848.86,
+                description = 0.0,
+                d = 0.0,
+                d1 = 0.0
             )
         }
     }
