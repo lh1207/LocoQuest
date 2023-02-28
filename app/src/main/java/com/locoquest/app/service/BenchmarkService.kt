@@ -21,9 +21,11 @@ import retrofit2.Response
 interface IBenchmarkService {
 }
 
-open class BenchmarkService{
-    open fun parseBenchmarkData(benchmarkJson: String): Any? {
-        TODO("Not yet implemented")
+open class BenchmarkService(application:Application){
+    private val application = application
+
+    open fun parseBenchmarkData(benchmarkJson: String) {
+        
     }
 
 }
