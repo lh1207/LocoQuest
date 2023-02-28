@@ -25,6 +25,9 @@ open class BenchmarkService(application:Application){
     private val application = application
 
     open fun parseBenchmarkData(benchmarkJson: String) {
+        withContext(Dispatchers.IO) {
+            val service = RetrofitClientInstance.retrofitInstance?.create(IBenchmarkDAO::class.java)
+        }
         
     }
 
