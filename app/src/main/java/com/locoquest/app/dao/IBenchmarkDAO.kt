@@ -12,9 +12,11 @@ import retrofit2.http.Query
 interface IBenchmarkDAO {
     @GET("pid")
     fun getBenchmarkByPid(@Query("pid") pid: String): Call<Benchmark>
+
+
 }
 
-fun main() {
+fun benchmarkDataPull() {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://geodesy.noaa.gov/api/nde/")
         .addConverterFactory(MoshiConverterFactory.create())
@@ -40,3 +42,5 @@ fun main() {
         }
     })
 }
+
+

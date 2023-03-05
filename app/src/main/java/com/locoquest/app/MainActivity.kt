@@ -21,14 +21,16 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 
 
+private val TAG : String = MainActivity::class.java.name
+private lateinit var auth: FirebaseAuth
+private const val REQ_ONE_TAP = 0
+private lateinit var oneTapClient: SignInClient
+private lateinit var signUpRequest: BeginSignInRequest
+private lateinit var signInButton: SignInButton
+private var showOneTapUI = true
+
 class MainActivity : AppCompatActivity(), OnMapReadyCallback{
-    private val TAG : String = MainActivity::class.java.name
-    private lateinit var auth: FirebaseAuth
-    private val REQ_ONE_TAP = 0
-    private lateinit var oneTapClient: SignInClient
-    private lateinit var signUpRequest: BeginSignInRequest
-    private lateinit var signInButton: SignInButton
-    private var showOneTapUI = true
+
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
