@@ -32,14 +32,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-
         when (requestCode) {
             REQ_ONE_TAP -> {
                 try {
                     val credential = oneTapClient.getSignInCredentialFromIntent(data)
                     val idToken = credential.googleIdToken
-                    when {
-                        idToken != null -> {
+                    if (idToken != null){
                             // Got an ID token from Google. Use it to authenticate
                             // with Firebase.
                             val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
@@ -57,13 +55,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
                                         //TODO updateUI(null)
                                     }
                                 }
-                        }
-                        else -> {
-                            // Shouldn't happen.
-                            Log.d(TAG, "No ID token!")
-                        }
-                    }
-                } catch (e: ApiException) {
+                            }
+                            else {
+                                // Shouldn't happen.
+                                Log.d(TAG, "No ID token!")
+                            }
+                     } catch (e: ApiException) {
                     when (e.statusCode) {
                         CommonStatusCodes.CANCELED -> {
                             Log.d(TAG, "One-tap dialog was closed.")

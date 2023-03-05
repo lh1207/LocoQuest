@@ -1,5 +1,8 @@
 package com.locoquest.app.dto
 
+import androidx.room.Entity
+
+@Entity(tableName="benchmark")
 data class Benchmark(
     val coordinates: String,
     val name: String,
@@ -10,6 +13,7 @@ data class Benchmark(
     val elevation: Double,
     val longitude: Double,
     val latitude: Double, ) // based on class diagram
+
 
 
 
