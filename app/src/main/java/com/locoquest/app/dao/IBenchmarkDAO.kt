@@ -14,12 +14,14 @@ interface IBenchmarkDAO {
     fun getBenchmarkByPid(@Query("pid") pid: String): Call<Benchmark>
 }
 
-fun main() {
-    val retrofit = Retrofit.Builder()
-        .baseUrl("https://geodesy.noaa.gov/api/nde/")
+fun createRetrofitInstance(baseUrl: String): Retrofit {
+    return Retrofit.Builder()
+        .baseUrl(baseUrl)
         .addConverterFactory(MoshiConverterFactory.create())
         .build()
-
+}
+fun main() {
+    val retrofit = createRetrofitInstance("https://geodesy.noaa.gov/api/nde/")
     val benchmarkDAO = retrofit.create(IBenchmarkDAO::class.java)
 
     val pid = "AB1234"

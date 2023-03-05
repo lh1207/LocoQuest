@@ -7,4 +7,5 @@ data class Photo(
     val remoteURL: String,
     val description: String,
     val benchmarkDate: Date,
-    val locationID: String)
+    val locationID: String
+)
