@@ -49,10 +49,10 @@ class BenchmarkServiceTest {
     }
 
     private class MockBenchmarkService(application: Application) : BenchmarkService(application) {
-        override suspend fun parseBenchmarkData(jsonData: String): Array<Benchmark> {
+         override suspend fun parseBenchmarkData(jsonData: String): Benchmark {
             // For the sake of the test, we'll just return a hard-coded benchmark object
-            val benchmark: Array<Benchmark> = ()
-            (Benchmark(
+
+            return Benchmark(
                 id = "ABC123",
                 name = "Mount Everest",
                 coordinates = "27.988056, 86.925278",
@@ -61,8 +61,9 @@ class BenchmarkServiceTest {
                 elevation = 8848.86,
                 description = 0.0,
                 d = 0.0,
-                d1 = 0.0))
-            return benchmark
+                d1 = 0.0
+            )
+
         }
     }
 }
