@@ -54,6 +54,18 @@ Tasked Stories for Sprint 1
   - https://github.com/users/lh1207/projects/8/
   - https://github.com/users/lh1207/projects/6/
   - https://github.com/users/lh1207/projects/9/
+  
+Milestones and Tasks for Sprint 2
+   - Implement Geolocation as soon as user grants permissions and opens app
+   - Alert user when geo-location and or internet capabilities have been lost
+   - Add benchmarks on the map
+   - Assuming geo-location is granted, show user's current location
+
+Tasked Stories for Sprint 2
+   - https://github.com/users/lh1207/projects/4/views/2
+   - https://github.com/users/lh1207/projects/7/views/1
+   - https://github.com/users/lh1207/projects/10/views/1
+   - https://github.com/users/lh1207/projects/11/views/1
 
 Scrum Roles, and who will fill those roles
   - Product Owner: Eric Miller
