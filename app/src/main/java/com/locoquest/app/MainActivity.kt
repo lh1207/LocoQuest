@@ -19,16 +19,25 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import com.locoquest.app.dao.IBenchmarkDAO
+import com.locoquest.app.dto.Benchmark
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import retrofit2.Retrofit
+import retrofit2.converter.moshi.MoshiConverterFactory
 
+
+private val TAG : String = MainActivity::class.java.name
+private lateinit var auth: FirebaseAuth
+private const val REQ_ONE_TAP = 0
+private lateinit var oneTapClient: SignInClient
+private lateinit var signUpRequest: BeginSignInRequest
+private lateinit var signInButton: SignInButton
+private var showOneTapUI = true
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback{
-    private val TAG : String = MainActivity::class.java.name
-    private lateinit var auth: FirebaseAuth
-    private val REQ_ONE_TAP = 0
-    private lateinit var oneTapClient: SignInClient
-    private lateinit var signUpRequest: BeginSignInRequest
-    private lateinit var signInButton: SignInButton
-    private var showOneTapUI = true
+
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -136,4 +145,30 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
     override fun onMapReady(p0: GoogleMap) {
 
     }
+}
+fun main() {
+    val retrofit = Retrofit.Builder()
+        .baseUrl("https://geodesy.noaa.gov/api/nde/")
+        .addConverterFactory(MoshiConverterFactory.create())
+        .build()
+
+    val benchmarkDAO = retrofit.create(IBenchmarkDAO::class.java)
+
+    val pid = "AB1234"
+
+    val call = benchmarkDAO.getBenchmarkByPid(pid)
+    call.enqueue(object : Callback<Benchmark> {
+        override fun onResponse(call: Call<Benchmark>, response: Response<Benchmark>) {
+            if (response.isSuccessful) {
+                val benchmark = response.body()
+                println(benchmark)
+            } else {
+                println("Error: ${response.code()}")
+            }
+        }
+
+        override fun onFailure(call: Call<Benchmark>, t: Throwable) {
+            println("Error: ${t.message}")
+        }
+    })
 }

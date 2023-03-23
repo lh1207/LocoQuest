@@ -1,7 +1,8 @@
 package com.locoquest.app
 
-import BenchmarkService
+import android.app.Application
 import com.locoquest.app.dto.Benchmark
+import com.locoquest.app.service.BenchmarkService
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -15,12 +16,13 @@ import org.junit.Test
       object with the expected values for its properties.
 */
 
+
 class BenchmarkServiceTest {
 
     private val benchmarkService: MockBenchmarkService = MockBenchmarkService()
 
     @Test
-    fun `test parsing of benchmark JSON data`() {
+  suspend fun `test parsing of benchmark JSON data`() {
         // Given
         val benchmarkJson = """
             {
@@ -46,9 +48,10 @@ class BenchmarkServiceTest {
         assertEquals(8848.86, benchmark.elevation, 0.001)
     }
 
-    private class MockBenchmarkService : BenchmarkService() {
-        override fun parseBenchmarkData(jsonData: String): Benchmark {
+    private class MockBenchmarkService(application: Application) : BenchmarkService(application) {
+         override suspend fun parseBenchmarkData(jsonData: String): Benchmark {
             // For the sake of the test, we'll just return a hard-coded benchmark object
+
             return Benchmark(
                 id = "ABC123",
                 name = "Mount Everest",
@@ -60,6 +63,7 @@ class BenchmarkServiceTest {
                 d = 0.0,
                 d1 = 0.0
             )
+
         }
     }
 }

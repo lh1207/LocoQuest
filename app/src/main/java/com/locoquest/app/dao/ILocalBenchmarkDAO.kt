@@ -7,7 +7,7 @@ import com.locoquest.app.dto.Benchmark
 
 @Dao
 interface ILocalBenchmarkDAO {
-    @Query("SELECT * FROM benchmark")
+    @Query("SELECT * FROM Benchmark")
     fun getBenchmark() : LiveData<List<Benchmark>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
