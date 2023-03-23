@@ -3,7 +3,7 @@ package com.locoquest.app
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-class RetrofitClientInstance {
+object RetrofitClientInstance {
     private var retrofit: Retrofit? = null;
     private val BASE_URL = ""//TODO
 

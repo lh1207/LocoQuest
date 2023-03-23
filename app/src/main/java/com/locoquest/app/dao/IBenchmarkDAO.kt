@@ -12,6 +12,10 @@ import retrofit2.http.Query
 interface IBenchmarkDAO {
     @GET("pid")
     fun getBenchmarkByPid(@Query("pid") pid: String): Call<Benchmark>
+
+    @GET("/")
+    fun getAllBenchmarks(): Call<ArrayList<Benchmark>>
+
 }
 
 fun main() {
