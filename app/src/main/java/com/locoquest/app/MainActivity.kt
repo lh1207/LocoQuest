@@ -37,6 +37,16 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
     private lateinit var signInButton: SignInButton
     private var showOneTapUI = true
     private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var map: GoogleMap
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        startLocationUpdates()
+    }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -55,12 +65,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
                                         // Sign in success, update UI with the signed-in user's information
                                         Log.d(TAG, "signInWithCredential:success")
                                         val user = auth.currentUser
-                                        //TODO updateUI(user)
+                                        hideSignInButton()
                                         Log.d(TAG, "Got ID token.")
                                     } else {
                                         // If sign in fails, display a message to the user.
                                         Log.w(TAG, "signInWithCredential:failure", task.exception)
-                                        //TODO updateUI(null)
                                     }
                                 }
                             }
@@ -133,7 +142,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
     override fun onStart() {
         super.onStart()
         var currentUser = auth.currentUser
-        //TODO updateUI(currentUser);
+        hideSignInButton()
+    }
+
+    private fun hideSignInButton(){
+        signInButton.visibility = View.GONE
     }
 
     private fun signOut(){
@@ -141,11 +154,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
     }
 
     override fun onMapReady(map: GoogleMap) {
-        val locationRequest = LocationRequest.create()
-        locationRequest.interval = 10000 // 10 seconds
-        locationRequest.fastestInterval = 5000 // 5 seconds
-        locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+        this.map = map
+        startLocationUpdates()
+    }
 
+    private fun startLocationUpdates(){
         if (ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -157,15 +170,24 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION), REQ_LOCATION)
             return
         }
-        fusedLocationClient.requestLocationUpdates(locationRequest, object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult?) {
-                locationResult?.let {
-                    val location = it.lastLocation
-                    val cameraUpdate = CameraUpdateFactory.newLatLngZoom(
-                        LatLng(location.latitude, location.longitude), 15f)
-                    map.moveCamera(cameraUpdate)
-                }
+        fusedLocationClient.requestLocationUpdates(createLocationRequest(), locationCallback, null)
+    }
+
+    private fun createLocationRequest(): LocationRequest {
+        return LocationRequest.create()
+            .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+            .setInterval(5000) // Update location every 5 seconds
+            .setFastestInterval(1000) // Update location at least every 1 second
+    }
+
+    private val locationCallback = object : LocationCallback() {
+        override fun onLocationResult(locationResult: LocationResult?) {
+            locationResult?.let {
+                val location = it.lastLocation
+                val cameraUpdate = CameraUpdateFactory.newLatLngZoom(
+                    LatLng(location.latitude, location.longitude), 15f)
+                map.moveCamera(cameraUpdate)
             }
-        }, null)
+        }
     }
 }
