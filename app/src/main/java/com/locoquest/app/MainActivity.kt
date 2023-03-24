@@ -1,17 +1,21 @@
 package com.locoquest.app
 
+import android.Manifest
 import android.content.Intent
 import android.content.IntentSender
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.android.gms.common.SignInButton
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
+import com.google.android.gms.location.*
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -25,10 +29,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
     private val TAG : String = MainActivity::class.java.name
     private lateinit var auth: FirebaseAuth
     private val REQ_ONE_TAP = 0
+    private val REQ_LOCATION = 1
     private lateinit var oneTapClient: SignInClient
     private lateinit var signUpRequest: BeginSignInRequest
     private lateinit var signInButton: SignInButton
     private var showOneTapUI = true
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -118,6 +124,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
         }
         val mapFragment = supportFragmentManager.findFragmentById(R.id.maps) as SupportMapFragment
         mapFragment.getMapAsync(this)
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
     }
 
     override fun onStart() {
@@ -130,7 +138,27 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
         Firebase.auth.signOut()
     }
 
-    override fun onMapReady(p0: GoogleMap) {
+    override fun onMapReady(map: GoogleMap) {
+        val locationRequest = LocationRequest.create()
+        locationRequest.interval = 10000 // 10 seconds
+        locationRequest.fastestInterval = 5000 // 5 seconds
+        locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
 
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION), REQ_LOCATION)
+            return
+        }
+        fusedLocationClient.requestLocationUpdates(locationRequest, object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult?) {
+                // Handle location updates here
+            }
+        }, null)
     }
 }
