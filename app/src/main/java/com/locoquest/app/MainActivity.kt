@@ -16,9 +16,11 @@ import com.google.android.gms.common.SignInButton
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.location.*
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
@@ -157,7 +159,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
         }
         fusedLocationClient.requestLocationUpdates(locationRequest, object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult?) {
-                // Handle location updates here
+                locationResult?.let {
+                    val location = it.lastLocation
+                    val cameraUpdate = CameraUpdateFactory.newLatLngZoom(
+                        LatLng(location.latitude, location.longitude), 15f)
+                    map.moveCamera(cameraUpdate)
+                }
             }
         }, null)
     }
