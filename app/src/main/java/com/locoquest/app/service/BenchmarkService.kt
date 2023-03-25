@@ -1,6 +1,7 @@
 import com.locoquest.app.RetrofitClientInstance
 import com.locoquest.app.dao.IBenchmarkDAO
 import com.locoquest.app.dto.Benchmark
+import com.squareup.moshi.Moshi
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -26,9 +27,10 @@ class BenchmarkService : IBenchmarkService {
         }
     }
 
-    override fun parseBenchmarkData(benchmarkJson: String): Any? {
-        // TODO: implement benchmark JSON parsing logic here
-        return null
+    override fun parseBenchmarkData(benchmarkJson: String): Benchmark? {
+        val moshi = Moshi.Builder().build()
+        val adapter = moshi.adapter(Benchmark::class.java)
+        return adapter.fromJson(benchmarkJson)
     }
 
     fun main() {
