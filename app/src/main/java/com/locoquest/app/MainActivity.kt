@@ -29,7 +29,7 @@ import com.google.firebase.ktx.Firebase
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback{
     private val TAG : String = MainActivity::class.java.name
-    private lateinit var auth: FirebaseAuth
+    private val auth = FirebaseAuth.getInstance()
     private val REQ_ONE_TAP = 0
     private val REQ_LOCATION = 1
     private lateinit var oneTapClient: SignInClient
@@ -112,7 +112,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
                     .setFilterByAuthorizedAccounts(false)
                     .build())
             .build()
-        auth = Firebase.auth
 
         signInButton = findViewById(R.id.google_sign_in_button)
         if(!showOneTapUI) signInButton.visibility = View.INVISIBLE
