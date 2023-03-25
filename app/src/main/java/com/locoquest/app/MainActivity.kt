@@ -1,12 +1,16 @@
 package com.locoquest.app
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
@@ -18,8 +22,8 @@ import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
@@ -154,6 +158,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
     override fun onMapReady(map: GoogleMap) {
         this.map = map
         startLocationUpdates()
+
+        // Check if the device is online before starting location updates
+        if(isOnline()){
+            startLocationUpdates()
+        } else {
+            Toast.makeText(this, "No internet connection", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun startLocationUpdates(){
@@ -188,4 +199,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
             }
         }
     }
+
+    fun isOnline(): Boolean {
+        val connectivityManager = applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork
+        val capabilities = connectivityManager.getNetworkCapabilities(network)
+        return capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+    }
+
 }
