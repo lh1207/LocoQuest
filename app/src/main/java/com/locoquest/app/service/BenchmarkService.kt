@@ -8,31 +8,39 @@ import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 
 interface IBenchmarkService {
+    fun getBenchmarkData(pidList: List<String>): List<Benchmark>?
+    fun parseBenchmarkData(benchmarkJson: String): Any?
 }
 
-open class BenchmarkService{
+class BenchmarkService : IBenchmarkService {
 
+    override fun getBenchmarkData(pidList: List<String>): List<Benchmark>? {
+        val benchmarkDAO = RetrofitClientInstance.retrofitInstance?.create(IBenchmarkDAO::class.java)
+        val call = benchmarkDAO?.getBenchmarkByPid(pidList.joinToString(","))
+        val response = call?.execute()
 
-    open fun parseBenchmarkData(benchmarkJson: String): Any? {
-        TODO("Not yet implemented")
+        return if (response?.isSuccessful == true && response.body() != null) {
+            listOf(response.body()!!)
+        } else {
+            null
+        }
+    }
+
+    override fun parseBenchmarkData(benchmarkJson: String): Any? {
+        // TODO: implement benchmark JSON parsing logic here
+        return null
     }
 
     fun main() {
-        val benchmarkDAO = RetrofitClientInstance.retrofitInstance?.create(IBenchmarkDAO::class.java)
-        val pid = "AB1234"
-        val call = benchmarkDAO?.getBenchmarkByPid(pid)
-        call?.enqueue(object : Callback<Benchmark> {
-            override fun onResponse(call: Call<Benchmark>, response: Response<Benchmark>) {
-                if (response.isSuccessful) {
-                    val benchmark = response.body()
-                    println(benchmark)
-                } else {
-                    println("Error: ${response.code()}")
-                }
+        val benchmarkService: IBenchmarkService = BenchmarkService()
+        val pidList = listOf("AB1234", "CD5678")
+        val benchmarkList = benchmarkService.getBenchmarkData(pidList)
+        if (benchmarkList != null) {
+            benchmarkList.forEach {
+                println(it)
             }
-            override fun onFailure(call: Call<Benchmark>, t: Throwable) {
-                println("Error: ${t.message}")
-            }
-        })
+        } else {
+            println("Error: unable to retrieve benchmark data")
+        }
     }
 }
