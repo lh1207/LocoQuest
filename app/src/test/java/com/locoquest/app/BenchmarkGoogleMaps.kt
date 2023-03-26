@@ -25,4 +25,9 @@ class BenchmarkMapGeneration {
             callback.onMapReady(googleMap)
         }
     }
+
+    @Test
+    fun mapLoads(){
+        assertNotNull(mapView.getMapAsync { })
+    }
 }
