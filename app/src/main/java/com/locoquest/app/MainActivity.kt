@@ -7,7 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
-import android.location.LocationRequest
+import android.graphics.Color
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
@@ -16,34 +16,37 @@ import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.android.gms.common.SignInButton
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
-import com.google.android.gms.location.* // REMOVE WILDCARD IMPORT ASAP
-import com.google.android.gms.maps.* // REMOVE WILDCARD IMPORT ASAP
+import com.google.android.gms.location.*
+import com.google.android.gms.maps.*
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.PolygonOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.launch
 
 
-
-class MainActivity : AppCompatActivity(), OnMapReadyCallback{
+class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private val TAG : String = MainActivity::class.java.name
     private val auth = FirebaseAuth.getInstance()
-    private val REQ_ONE_TAP = 0
-    private val REQ_LOCATION = 1
     private lateinit var oneTapClient: SignInClient
     private lateinit var signUpRequest: BeginSignInRequest
     private lateinit var signInButton: SignInButton
     private var showOneTapUI = true
+    private var mMapFragment: SupportMapFragment? = null
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private lateinit var map: GoogleMap
+    private lateinit var googleMap: GoogleMap
+    private lateinit var mapboxMap: MapboxMap
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -109,23 +112,43 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        // Initialize the mapView property
+        mapView = findViewById(R.id.map_container)
+        mapView.onCreate(savedInstanceState)
+        mapView.getMapAsync(this)
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
         val benchmarkService: IBenchmarkService = BenchmarkService()
         val pidList = listOf("AB1234", "CD5678")
-        val benchmarkList = benchmarkService.getBenchmarkData(pidList)
-        if (benchmarkList != null) {
-            val mapFragment = supportFragmentManager.findFragmentById(R.id.map_container) as SupportMapFragment
-            mapFragment.getMapAsync { map ->
-                benchmarkList.forEach { benchmark ->
-                    val marker = MarkerOptions()
-                        .position(LatLng(benchmark.lat.toDouble(), benchmark.lon.toDouble()))
-                        .title(benchmark.name)
-                        .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHt}")
-                    map.addMarker(marker)
+
+        lifecycleScope.launch {
+            try {
+                val benchmarkList = benchmarkService.getBenchmarkData(pidList)
+                if (benchmarkList != null) {
+                    val mapFragment = supportFragmentManager.findFragmentById(R.id.map_container) as SupportMapFragment
+                    mapFragment.getMapAsync { map ->
+                        benchmarkList.forEach { benchmark ->
+                            val marker = MarkerOptions()
+                                .position(LatLng(benchmark.lat.toDouble(), benchmark.lon.toDouble()))
+                                .title(benchmark.name)
+                                .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHt}")
+                            map.addMarker(marker)
+                        }
+                    }
+                } else {
+                    println("Error: unable to retrieve benchmark data")
                 }
+            } catch (e: Exception) {
+                println("Error: ${e.message}")
             }
-        } else {
-            println("Error: unable to retrieve benchmark data")
         }
+
+        // Find the map fragment and initialize it
+        mMapFragment = supportFragmentManager
+            .findFragmentById(R.id.map_container) as SupportMapFragment?
+        mMapFragment?.getMapAsync(this)
+
 
         // Firebase Sign-in
         oneTapClient = Identity.getSignInClient(this)
@@ -163,6 +186,39 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
         mapFragment.getMapAsync(this)
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+        addMarkers()
+        addPolygons()
+        addMapListeners()
+
+    }
+
+    private fun addMarkers() {
+        // Add markers to the map
+        val markerOptions = MarkerOptions()
+            .position(LatLng(37.7749, -122.4194))
+            .title("San Francisco")
+        mapboxMap.addMarker(markerOptions)
+    }
+
+    private fun addPolygons() {
+        // Add polygons to the map
+        val polygonOptions = PolygonOptions()
+            .add(LatLng(37.7765, -122.4351))
+            .add(LatLng(37.7604, -122.4142))
+            .add(LatLng(37.7615, -122.4093))
+            .add(LatLng(37.7707, -122.4089))
+            .fillColor(Color.parseColor("#3bb2d0"))
+            .alpha(0.5f)
+        mapboxMap.addPolygon(polygonOptions)
+    }
+
+    private fun addMapListeners() {
+        // Add listeners for various map events
+        mapboxMap.addOnMapClickListener { point ->
+            // Handle map click events
+            true
+        }
     }
 
     override fun onStart() {
@@ -179,6 +235,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
     override fun onPause() {
         super.onPause()
         mapView.onPause()
+        stopLocationUpdates()
     }
 
     override fun onDestroy() {
@@ -199,8 +256,24 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
         Firebase.auth.signOut()
     }
 
+// Map section
+companion object {
+    const val MY_PERMISSIONS_REQUEST_LOCATION = 1
+    const val REQ_ONE_TAP = 2
+    const val REQ_LOCATION = 3
+}
+    private fun requestLocationPermission() {
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(this,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                MY_PERMISSIONS_REQUEST_LOCATION)
+        }
+    }
+
     override fun onMapReady(map: GoogleMap) {
-        this.map = map
+        googleMap = map
 
         val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork
@@ -212,7 +285,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
             Toast.makeText(this, "Unable to start location updates. Device is offline.", Toast.LENGTH_SHORT).show()
         }
     }
-
+    private fun stopLocationUpdates() {
+        fusedLocationClient.removeLocationUpdates(locationCallback)
+    }
     private fun startLocationUpdates(){
         if (ActivityCompat.checkSelfPermission(
                 this,
@@ -225,10 +300,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION), REQ_LOCATION)
             return
         }
-        fusedLocationClient.requestLocationUpdates(createLocationRequest(), locationCallback, null)
     }
 
-    //TODO: Fix ambiguous imports that are causing unresolved references
+
+    //TODO: onLocationResult overrides nothing
     private fun createLocationRequest(): LocationRequest {
         return LocationRequest.create()
             .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
@@ -236,16 +311,17 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
             .setFastestInterval(1000) // Update location at least every 1 second
     }
 
+    // Override onLocationResult() method
     private val locationCallback = object : LocationCallback() {
-        override fun onLocationResult(locationResult: LocationResult?) {
-            locationResult?.let {
-                val location = it.lastLocation
+        override fun onLocationResult(locationResult: LocationResult) {
+            locationResult.lastLocation.let { location ->
                 val cameraUpdate = CameraUpdateFactory.newLatLngZoom(
                     LatLng(location.latitude, location.longitude), 15f)
-                map.moveCamera(cameraUpdate)
+                googleMap.moveCamera(cameraUpdate)
             }
         }
     }
+
 
     fun isOnline(): Boolean {
         val connectivityManager = applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
