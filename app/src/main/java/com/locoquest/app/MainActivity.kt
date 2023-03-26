@@ -1,10 +1,13 @@
 package com.locoquest.app
 
+import BenchmarkService
+import IBenchmarkService
 import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
+import android.location.LocationRequest
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
@@ -19,16 +22,15 @@ import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.android.gms.common.SignInButton
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
-import com.google.android.gms.location.*
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.location.* // REMOVE WILDCARD IMPORT ASAP
+import com.google.android.gms.maps.* // REMOVE WILDCARD IMPORT ASAP
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+
 
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback{
@@ -101,9 +103,31 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
         }
     }
 
+
+    // Benchmarks on Map
+    private lateinit var mapView: MapView
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        val benchmarkService: IBenchmarkService = BenchmarkService()
+        val pidList = listOf("AB1234", "CD5678")
+        val benchmarkList = benchmarkService.getBenchmarkData(pidList)
+        if (benchmarkList != null) {
+            val mapFragment = supportFragmentManager.findFragmentById(R.id.map_container) as SupportMapFragment
+            mapFragment.getMapAsync { map ->
+                benchmarkList.forEach { benchmark ->
+                    val marker = MarkerOptions()
+                        .position(LatLng(benchmark.lat.toDouble(), benchmark.lon.toDouble()))
+                        .title(benchmark.name)
+                        .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHt}")
+                    map.addMarker(marker)
+                }
+            }
+        } else {
+            println("Error: unable to retrieve benchmark data")
+        }
+
+        // Firebase Sign-in
         oneTapClient = Identity.getSignInClient(this)
         signUpRequest = BeginSignInRequest.builder()
             .setGoogleIdTokenRequestOptions(
@@ -135,7 +159,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
                     Log.d(TAG, e.localizedMessage)
                 }
         }
-        val mapFragment = supportFragmentManager.findFragmentById(R.id.maps) as SupportMapFragment
+        val mapFragment = supportFragmentManager.findFragmentById(R.id.map_container) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
@@ -145,6 +169,26 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
         super.onStart()
         var currentUser = auth.currentUser
         hideSignInButton()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        mapView.onResume()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        mapView.onPause()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        mapView.onDestroy()
+    }
+
+    override fun onLowMemory() {
+        super.onLowMemory()
+        mapView.onLowMemory()
     }
 
     private fun hideSignInButton(){
@@ -157,13 +201,15 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
 
     override fun onMapReady(map: GoogleMap) {
         this.map = map
-        startLocationUpdates()
 
-        // Check if the device is online before starting location updates
-        if(isOnline()){
+        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork
+        val capabilities = connectivityManager.getNetworkCapabilities(network)
+
+        if (capabilities != null && (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR))) {
             startLocationUpdates()
         } else {
-            Toast.makeText(this, "No internet connection", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Unable to start location updates. Device is offline.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -182,6 +228,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback{
         fusedLocationClient.requestLocationUpdates(createLocationRequest(), locationCallback, null)
     }
 
+    //TODO: Fix ambiguous imports that are causing unresolved references
     private fun createLocationRequest(): LocationRequest {
         return LocationRequest.create()
             .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)

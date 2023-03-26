@@ -1,3 +1,7 @@
+import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
+import com.locoquest.app.R
 import com.locoquest.app.RetrofitClientInstance
 import com.locoquest.app.dao.IBenchmarkDAO
 import com.locoquest.app.dto.Benchmark
