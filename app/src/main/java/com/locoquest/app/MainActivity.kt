@@ -1,3 +1,10 @@
+/**
+
+MainActivity is the main entry point of the application. It is responsible for initializing
+the application, requesting location permission, showing Google Maps, retrieving data from a
+remote server, and authenticating with Firebase.
+@constructor Creates a new instance of the MainActivity class.
+ */
 package com.locoquest.app
 
 import BenchmarkService
@@ -26,9 +33,12 @@ import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.*
+import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.PolygonOptions
+import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.GoogleMap
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
@@ -37,17 +47,40 @@ import kotlinx.coroutines.launch
 
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback {
+    // The name of the MainActivity class.
     private val TAG : String = MainActivity::class.java.name
-    private val auth = FirebaseAuth.getInstance()
-    private lateinit var oneTapClient: SignInClient
-    private lateinit var signUpRequest: BeginSignInRequest
-    private lateinit var signInButton: SignInButton
-    private var showOneTapUI = true
-    private var mMapFragment: SupportMapFragment? = null
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private lateinit var googleMap: GoogleMap
-    private lateinit var mapboxMap: MapboxMap
 
+    // The Firebase authentication instance.
+    private val auth = FirebaseAuth.getInstance()
+
+    // The One Tap client used for Google Sign-In.
+    private lateinit var oneTapClient: SignInClient
+
+    // The sign-in request used for Google Sign-In.
+    private lateinit var signUpRequest: BeginSignInRequest
+
+    // The Google Sign-In button.
+    private lateinit var signInButton: SignInButton // Declare the variable here
+
+    // A flag indicating whether or not to show the One Tap UI.
+    private var showOneTapUI = true
+
+    // The map fragment used for Google Maps.
+    private var mMapFragment: SupportMapFragment? = null
+
+    // The FusedLocationProviderClient instance.
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+
+    // The Google Map instance.
+    private lateinit var googleMap: GoogleMap
+
+    /**
+     * Called when a permission request has been completed.
+     *
+     * @param requestCode The request code that was passed to the permission request.
+     * @param permissions An array of permission strings.
+     * @param grantResults An array of grant results for the corresponding permissions.
+     */
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
@@ -57,6 +90,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         startLocationUpdates()
     }
 
+    /**
+     * Called when the activity receives a result from another activity.
+     * In this case, it handles the result of the Google One-Tap sign-in dialog.
+     */
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
@@ -64,28 +101,27 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 try {
                     val credential = oneTapClient.getSignInCredentialFromIntent(data)
                     val idToken = credential.googleIdToken
-                    if (idToken != null){
-                            // Got an ID token from Google. Use it to authenticate
-                            // with Firebase.
-                            val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
-                            auth.signInWithCredential(firebaseCredential)
-                                .addOnCompleteListener(this) { task ->
-                                    if (task.isSuccessful) {
-                                        // Sign in success, update UI with the signed-in user's information
-                                        Log.d(TAG, "signInWithCredential:success")
-                                        hideSignInButton()
-                                        Log.d(TAG, "Got ID token.")
-                                    } else {
-                                        // If sign in fails, display a message to the user.
-                                        Log.w(TAG, "signInWithCredential:failure", task.exception)
-                                    }
+                    if (idToken != null) {
+                        // Got an ID token from Google. Use it to authenticate
+                        // with Firebase.
+                        val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
+                        auth.signInWithCredential(firebaseCredential)
+                            .addOnCompleteListener(this) { task ->
+                                if (task.isSuccessful) {
+                                    // Sign in success, update UI with the signed-in user's information
+                                    Log.d(TAG, "signInWithCredential:success")
+                                    //TODO: hideSignInButton()
+                                    Log.d(TAG, "Got ID token.")
+                                } else {
+                                    // If sign in fails, display a message to the user.
+                                    Log.w(TAG, "signInWithCredential:failure", task.exception)
                                 }
                             }
-                            else {
-                                // Shouldn't happen.
-                                Log.d(TAG, "No ID token!")
-                            }
-                     } catch (e: ApiException) {
+                    } else {
+                        // Shouldn't happen.
+                        Log.d(TAG, "No ID token!")
+                    }
+                } catch (e: ApiException) {
                     when (e.statusCode) {
                         CommonStatusCodes.CANCELED -> {
                             Log.d(TAG, "One-tap dialog was closed.")
@@ -97,50 +133,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                             // Try again or just ignore.
                         }
                         else -> {
-                            Log.d(TAG, "Couldn't get credential from result." +
-                                    " (${e.localizedMessage})")
+                            Log.d(
+                                TAG, "Couldn't get credential from result." +
+                                        " (${e.localizedMessage})"
+                            )
                         }
                     }
                 }
-            }
-        }
-    }
-
-
-    // Benchmarks on Map
-    private lateinit var mapView: MapView
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-        // Initialize the mapView property
-        mapView = findViewById(R.id.map_container)
-        mapView.onCreate(savedInstanceState)
-        mapView.getMapAsync(this)
-
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-
-        val benchmarkService: IBenchmarkService = BenchmarkService()
-        val pidList = listOf("AB1234", "CD5678")
-
-        lifecycleScope.launch {
-            try {
-                val benchmarkList = benchmarkService.getBenchmarkData(pidList)
-                if (benchmarkList != null) {
-                    val mapFragment = supportFragmentManager.findFragmentById(R.id.map_container) as SupportMapFragment
-                    mapFragment.getMapAsync { map ->
-                        benchmarkList.forEach { benchmark ->
-                            val marker = MarkerOptions()
-                                .position(LatLng(benchmark.lat.toDouble(), benchmark.lon.toDouble()))
-                                .title(benchmark.name)
-                                .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHt}")
-                            map.addMarker(marker)
-                        }
-                    }
-                } else {
-                    println("Error: unable to retrieve benchmark data")
-                }
-            } catch (e: Exception) {
-                println("Error: ${e.message}")
             }
         }
 
@@ -163,7 +162,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     .build())
             .build()
 
+
+        // Find the SignInButton view in the layout
         signInButton = findViewById(R.id.google_sign_in_button)
+
         if(!showOneTapUI) signInButton.visibility = View.INVISIBLE
         signInButton.setOnClickListener {
             oneTapClient.beginSignIn(signUpRequest)
@@ -182,75 +184,97 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     Log.d(TAG, e.localizedMessage)
                 }
         }
-        val mapFragment = supportFragmentManager.findFragmentById(R.id.map_container) as SupportMapFragment
+        // Get the SupportMapFragment and request notification
+        // when the map is ready to be used.
+        val mapFragment = supportFragmentManager
+            .findFragmentById(R.id.map_container) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        addMarkers()
-        addPolygons()
-        addMapListeners()
-
     }
 
-    private fun addMarkers() {
-        // Add markers to the map
-        val markerOptions = MarkerOptions()
-            .position(LatLng(37.7749, -122.4194))
-            .title("San Francisco")
-        mapboxMap.addMarker(markerOptions)
-    }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
 
-    private fun addPolygons() {
-        // Add polygons to the map
-        val polygonOptions = PolygonOptions()
-            .add(LatLng(37.7765, -122.4351))
-            .add(LatLng(37.7604, -122.4142))
-            .add(LatLng(37.7615, -122.4093))
-            .add(LatLng(37.7707, -122.4089))
-            .fillColor(Color.parseColor("#3bb2d0"))
-            .alpha(0.5f)
-        mapboxMap.addPolygon(polygonOptions)
-    }
+    // Find the FragmentContainerView that contains the map
+        val mapFragment = supportFragmentManager.findFragmentById(R.id.map_container) as? SupportMapFragment
 
-    private fun addMapListeners() {
-        // Add listeners for various map events
-        mapboxMap.addOnMapClickListener { point ->
-            // Handle map click events
-            true
+        if (mapFragment == null) {
+            Log.e(TAG, "Error: map fragment not found")
+            return
+        }
+
+    // Get the map asynchronously
+        mapFragment.getMapAsync { map ->
+            val googleMap = map
+
+            // Add the markers to the map
+            val benchmarkService: IBenchmarkService = BenchmarkService()
+            val pidList = listOf("AB1234", "CD5678")
+
+            lifecycleScope.launch {
+                try {
+                    val benchmarkList = benchmarkService.getBenchmarkData(pidList)
+                    if (benchmarkList != null) {
+                        benchmarkList.forEach { benchmark ->
+                            val marker = MarkerOptions()
+                                .position(LatLng(benchmark.lat.toDouble(), benchmark.lon.toDouble()))
+                                .title(benchmark.name)
+                                .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHt}")
+                            map.addMarker(marker)
+                        }
+                    } else {
+                        println("Error: unable to retrieve benchmark data")
+                    }
+                } catch (e: Exception) {
+                    println("Error: ${e.message}")
+                }
+            }
         }
     }
+
+/**
+    private fun addMapListeners() {
+        // Add listeners for various map events
+        googleMap.setOnMapClickListener(onMapClickListener)
+    }
+    **/
 
     override fun onStart() {
         super.onStart()
         var currentUser = auth.currentUser
-        hideSignInButton()
+        //TODO: hideSignInButton()
     }
 
     override fun onResume() {
         super.onResume()
-        mapView.onResume()
+        mMapFragment?.onResume()
     }
 
     override fun onPause() {
         super.onPause()
-        mapView.onPause()
+        mMapFragment?.onPause()
         stopLocationUpdates()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        mapView.onDestroy()
+        mMapFragment?.onDestroy()
     }
 
     override fun onLowMemory() {
         super.onLowMemory()
-        mapView.onLowMemory()
+        mMapFragment?.onLowMemory()
     }
 
+    //TODO: kotlin.UninitializedPropertyAccessException: lateinit property signInButton has not been initialized
+    /**
     private fun hideSignInButton(){
         signInButton.visibility = View.GONE
     }
+    **/
 
     private fun signOut(){
         Firebase.auth.signOut()
@@ -284,7 +308,38 @@ companion object {
         } else {
             Toast.makeText(this, "Unable to start location updates. Device is offline.", Toast.LENGTH_SHORT).show()
         }
+        this.googleMap = googleMap
+
+        val position = CameraPosition.Builder()
+            .target(LatLng(40.7128, -74.0060))
+            .zoom(12.0F)
+            .build()
+
+        googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(position))
+
+        // Add markers to the map
+        val markerOptions = MarkerOptions()
+            .position(LatLng(37.7749, -122.4194))
+            .title("San Francisco")
+        map.addMarker(markerOptions)
+
+        // Add polygons to the map
+        val polygonOptions = PolygonOptions()
+            .add(LatLng(37.7765, -122.4351))
+            .add(LatLng(37.7604, -122.4142))
+            .add(LatLng(37.7615, -122.4093))
+            .add(LatLng(37.7707, -122.4089))
+            .fillColor(Color.argb(128, 59, 178, 208)) // Set alpha with argb method
+        map.addPolygon(polygonOptions)
+
+        // Add listener for map click events
+        map.setOnMapClickListener { latLng ->
+            // Handle map click events
+            true
+        }
+
     }
+
     private fun stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(locationCallback)
     }
@@ -303,7 +358,6 @@ companion object {
     }
 
 
-    //TODO: onLocationResult overrides nothing
     private fun createLocationRequest(): LocationRequest {
         return LocationRequest.create()
             .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
@@ -311,7 +365,6 @@ companion object {
             .setFastestInterval(1000) // Update location at least every 1 second
     }
 
-    // Override onLocationResult() method
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
             locationResult.lastLocation.let { location ->
