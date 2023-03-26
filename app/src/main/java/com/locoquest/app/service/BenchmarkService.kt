@@ -17,7 +17,7 @@ interface IBenchmarkService {
     fun parseBenchmarkData(benchmarkJson: String): Any?
 }
 
-class BenchmarkService : IBenchmarkService {
+open class BenchmarkService : IBenchmarkService {
 
     override fun getBenchmarkData(pidList: List<String>): List<Benchmark>? {
         val benchmarkDAO = RetrofitClientInstance.retrofitInstance?.create(IBenchmarkDAO::class.java)

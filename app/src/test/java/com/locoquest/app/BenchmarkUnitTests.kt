@@ -24,12 +24,18 @@ class BenchmarkServiceTest {
         // Given
         val benchmarkJson = """
             {
-                "id": "ABC123",
+                "pid": "ABC123",
                 "name": "Mount Everest",
-                "latitude": 27.988056,
-                "longitude": 86.925278,
-                "elevation": 8848.86,
-                "coordinates": "27.988056, 86.925278"
+                "lat": "27.988056",
+                "lon": "86.925278",
+                "ellipHeight": "8848.86",
+                "posDatum": "N/A",
+                "posSource": "N/A",
+                "posOrder": "N/A",
+                "orthoHt": "N/A",
+                "vertDatum": "N/A",
+                "vertSource": "N/A",
+                "vertOrder": "N/A"
             }
         """.trimIndent()
 
@@ -38,27 +44,35 @@ class BenchmarkServiceTest {
 
         // Then
         assertNotNull(benchmark)
-        assertEquals("ABC123", benchmark.id)
+        assertEquals("ABC123", benchmark.pid)
         assertEquals("Mount Everest", benchmark.name)
-        assertEquals("27.988056, 86.925278", benchmark.coordinates)
-        assertEquals(27.988056, benchmark.latitude, 0.001)
-        assertEquals(86.925278, benchmark.longitude, 0.001)
-        assertEquals(8848.86, benchmark.elevation, 0.001)
+        assertEquals("27.988056", benchmark.lat)
+        assertEquals("86.925278", benchmark.lon)
+        assertEquals("8848.86", benchmark.ellipHeight)
+        assertEquals("N/A", benchmark.posDatum)
+        assertEquals("N/A", benchmark.posSource)
+        assertEquals("N/A", benchmark.posOrder)
+        assertEquals("N/A", benchmark.orthoHt)
+        assertEquals("N/A", benchmark.vertDatum)
+        assertEquals("N/A", benchmark.vertSource)
+        assertEquals("N/A", benchmark.vertOrder)
     }
 
     private class MockBenchmarkService : BenchmarkService() {
         override fun parseBenchmarkData(jsonData: String): Benchmark {
-            // For the sake of the test, we'll just return a hard-coded benchmark object
             return Benchmark(
-                id = "ABC123",
+                pid = "ABC123",
                 name = "Mount Everest",
-                coordinates = "27.988056, 86.925278",
-                latitude = 27.988056,
-                longitude = 86.925278,
-                elevation = 8848.86,
-                description = 0.0,
-                d = 0.0,
-                d1 = 0.0
+                lat = "27.988056",
+                lon = "86.925278",
+                ellipHeight = "8848.86",
+                posDatum = "N/A",
+                posSource = "N/A",
+                posOrder = "N/A",
+                orthoHt = "N/A",
+                vertDatum = "N/A",
+                vertSource = "N/A",
+                vertOrder = "N/A"
             )
         }
     }
