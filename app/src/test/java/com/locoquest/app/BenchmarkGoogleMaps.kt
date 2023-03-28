@@ -40,7 +40,7 @@ class MapsTest {
         assertNotNull(mapView.getMapAsync { })
     }
 
-    // Below is a mock unit test for adding markers, currented commented out as it was causing
+    // Below is a mock unit test for adding markers, currently commented out as it was causing
     // compilation errors, and is not needed in current build
 
     /*@Test
