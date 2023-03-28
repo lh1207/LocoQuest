@@ -81,12 +81,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
      * @param permissions An array of permission strings.
      * @param grantResults An array of grant results for the corresponding permissions.
      */
-    override fun onRequestPermissionsResult(
+    override fun onPermissionRequestCompletion(
         requestCode: Int,
         permissions: Array<out String>,
         grantResults: IntArray
     ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        super.onPermissionRequestCompletion(requestCode, permissions, grantResults)
         startLocationUpdates()
     }
 
