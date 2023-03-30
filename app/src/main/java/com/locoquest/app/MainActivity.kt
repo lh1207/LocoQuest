@@ -74,6 +74,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     // The Google Map instance.
     private lateinit var googleMap: GoogleMap
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        buildMap()
+    }
+
     /**
      * Called when a permission request has been completed.
      *
@@ -101,25 +107,19 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 try {
                     val credential = oneTapClient.getSignInCredentialFromIntent(data)
                     val idToken = credential.googleIdToken
-                    if (idToken != null) {
-                        // Got an ID token from Google. Use it to authenticate
-                        // with Firebase.
+                    idToken?.let{
+                        // Got an ID token from Google. Use it to authenticate with Firebase.
                         val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
                         auth.signInWithCredential(firebaseCredential)
                             .addOnCompleteListener(this) { task ->
                                 if (task.isSuccessful) {
                                     // Sign in success, update UI with the signed-in user's information
-                                    Log.d(TAG, "signInWithCredential:success")
-                                    //TODO: hideSignInButton()
-                                    Log.d(TAG, "Got ID token.")
+                                    Log.d(TAG, "You are logged in")
                                 } else {
                                     // If sign in fails, display a message to the user.
-                                    Log.w(TAG, "signInWithCredential:failure", task.exception)
-                                }
+                                    Log.w(TAG, "Error logging in" + task.exception)
                             }
-                    } else {
-                        // Shouldn't happen.
-                        Log.d(TAG, "No ID token!")
+                        }
                     }
                 } catch (e: ApiException) {
                     when (e.statusCode) {
@@ -194,26 +194,16 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
-    // Find the FragmentContainerView that contains the map
+    private fun buildMap() {
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map_container) as? SupportMapFragment
-
         if (mapFragment == null) {
             Log.e(TAG, "Error: map fragment not found")
             return
         }
-
-    // Get the map asynchronously
         mapFragment.getMapAsync { map ->
             val googleMap = map
-
-            // Add the markers to the map
             val benchmarkService: IBenchmarkService = BenchmarkService()
             val pidList = listOf("AB1234", "CD5678")
-
             lifecycleScope.launch {
                 try {
                     val benchmarkList = benchmarkService.getBenchmarkData(pidList)
@@ -337,7 +327,6 @@ companion object {
             // Handle map click events
             true
         }
-
     }
 
     private fun stopLocationUpdates() {
@@ -375,12 +364,10 @@ companion object {
         }
     }
 
-
     fun isOnline(): Boolean {
         val connectivityManager = applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork
         val capabilities = connectivityManager.getNetworkCapabilities(network)
         return capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
     }
-
 }

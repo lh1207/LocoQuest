@@ -3,8 +3,8 @@ package com.locoquest.app.dto
 import java.util.*
 
 data class Photo(
-    val localURL: String,
-    val remoteURL: String,
-    val description: String,
-    val benchmarkDate: Date,
-    val locationID: String)
+    var localURL: String,
+    var remoteURL: String,
+    var description: String,
+    var benchmarkDate: Date,
+    var locationID: String)
