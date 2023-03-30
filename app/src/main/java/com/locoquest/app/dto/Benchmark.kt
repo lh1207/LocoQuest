@@ -4,18 +4,18 @@ import androidx.room.Entity
 
 @Entity(tableName="benchmark")
 data class Benchmark(
-    val pid: String,
-    val name: String,
-    val lat: String,
-    val lon: String,
-    val ellipHeight: String,
-    val posDatum: String,
-    val posSource: String,
-    val posOrder: String,
-    val orthoHt: String,
-    val vertDatum: String,
-    val vertSource: String,
-    val vertOrder: String )
+    var pid: String,
+    var name: String,
+    var lat: String,
+    var lon: String,
+    var ellipHeight: String,
+    var posDatum: String,
+    var posSource: String,
+    var posOrder: String,
+    var orthoHt: String,
+    var vertDatum: String,
+    var vertSource: String,
+    var vertOrder: String )
 
 
 
