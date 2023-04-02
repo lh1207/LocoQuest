@@ -112,7 +112,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                                 if (task.isSuccessful) {
                                     // Sign in success, update UI with the signed-in user's information
                                     Log.d(TAG, "signInWithCredential:success")
-                                    //TODO: hideSignInButton()
+                                    hideSignInButton()
                                     Log.d(TAG, "Got ID token.")
                                 } else {
                                     // If sign in fails, display a message to the user.
@@ -200,6 +200,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        signInButton = findViewById(R.id.google_sign_in_button)
+
         // Initialize Google Map
         initGoogleMap()
 
@@ -253,7 +255,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onStart() {
         super.onStart()
         var currentUser = auth.currentUser
-        //TODO: hideSignInButton()
+        if (currentUser != null) { // Check if the user is signed in
+            hideSignInButton()
+        }
     }
 
     override fun onResume() {
@@ -278,11 +282,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     //TODO: kotlin.UninitializedPropertyAccessException: lateinit property signInButton has not been initialized
-    /**
     private fun hideSignInButton(){
         signInButton.visibility = View.GONE
     }
-    **/
 
     private fun signOut(){
         Firebase.auth.signOut()
