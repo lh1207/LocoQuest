@@ -44,6 +44,8 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
+import com.google.android.gms.maps.SupportMapFragment
+
 
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback {
@@ -198,7 +200,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-    // Find the FragmentContainerView that contains the map
+        // Initialize Google Map
+        initGoogleMap()
+
+    }
+
+    private fun initGoogleMap() {
+        // Find the FragmentContainerView that contains the map
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map_container) as? SupportMapFragment
 
         if (mapFragment == null) {
@@ -206,7 +214,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             return
         }
 
-    // Get the map asynchronously
+        // Get the map asynchronously
         mapFragment.getMapAsync { map ->
             val googleMap = map
 
