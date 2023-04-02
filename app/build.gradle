@@ -2,6 +2,7 @@ plugins {
     id 'com.android.application'
     id 'kotlin-android'
     id 'com.google.gms.google-services'
+    id "org.sonarqube" version "3.5.0.2730"
 }
 
 android {
