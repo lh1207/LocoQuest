@@ -94,6 +94,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
      * Called when the activity receives a result from another activity.
      * In this case, it handles the result of the Google One-Tap sign-in dialog.
      */
+    @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
@@ -104,19 +105,20 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     if (idToken != null) {
                         // Got an ID token from Google. Use it to authenticate
                         // with Firebase.
-                        val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
-                        auth.signInWithCredential(firebaseCredential)
-                            .addOnCompleteListener(this) { task ->
-                                if (task.isSuccessful) {
-                                    // Sign in success, update UI with the signed-in user's information
-                                    Log.d(TAG, "signInWithCredential:success")
-                                    //TODO: hideSignInButton()
-                                    Log.d(TAG, "Got ID token.")
-                                } else {
-                                    // If sign in fails, display a message to the user.
-                                    Log.w(TAG, "signInWithCredential:failure", task.exception)
+                            val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
+                            auth.signInWithCredential(firebaseCredential)
+                                .addOnCompleteListener(this) { task ->
+                                    if (task.isSuccessful) {
+                                        // Sign in success, update UI with the signed-in user's information
+                                        Log.d(TAG, "signInWithCredential:success")
+                                        //TODO: hideSignInButton()
+                                        Log.d(TAG, "Got ID token.")
+                                    } else {
+                                        // If sign in fails, display a message to the user.
+                                        Log.w(TAG, "signInWithCredential:failure", task.exception)
+                                    }
                                 }
-                            }
+
                     } else {
                         // Shouldn't happen.
                         Log.d(TAG, "No ID token!")
@@ -181,7 +183,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
                 .addOnFailureListener(this) { e ->
                     // No Google Accounts found. Just continue presenting the signed-out UI.
-                    Log.d(TAG, e.localizedMessage)
+                    e.localizedMessage?.let { it1 -> Log.d(TAG, it1) }
                 }
         }
         // Get the SupportMapFragment and request notification
@@ -324,6 +326,7 @@ companion object {
         map.addMarker(markerOptions)
 
         // Add polygons to the map
+
         val polygonOptions = PolygonOptions()
             .add(LatLng(37.7765, -122.4351))
             .add(LatLng(37.7604, -122.4142))
