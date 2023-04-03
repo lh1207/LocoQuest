@@ -46,8 +46,6 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 import com.google.android.gms.maps.SupportMapFragment
 
-
-
 class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     // The name of the MainActivity class.
     private val TAG : String = MainActivity::class.java.name
@@ -112,7 +110,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                                 if (task.isSuccessful) {
                                     // Sign in success, update UI with the signed-in user's information
                                     Log.d(TAG, "signInWithCredential:success")
-                                    hideSignInButton() // Call the function here
+                                    hideSignInButton()
                                     Log.d(TAG, "Got ID token.")
                                 } else {
                                     // If sign in fails, display a message to the user.
