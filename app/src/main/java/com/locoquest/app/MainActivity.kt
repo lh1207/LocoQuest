@@ -44,7 +44,7 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
-
+import com.google.android.gms.maps.SupportMapFragment
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     // The name of the MainActivity class.
@@ -110,13 +110,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                                 if (task.isSuccessful) {
                                     // Sign in success, update UI with the signed-in user's information
                                     Log.d(TAG, "signInWithCredential:success")
-                                    //TODO: hideSignInButton()
+                                    hideSignInButton()
                                     Log.d(TAG, "Got ID token.")
                                 } else {
                                     // If sign in fails, display a message to the user.
                                     Log.w(TAG, "signInWithCredential:failure", task.exception)
                                 }
                             }
+
                     } else {
                         // Shouldn't happen.
                         Log.d(TAG, "No ID token!")
@@ -198,7 +199,52 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-    // Find the FragmentContainerView that contains the map
+        // Initialize Google Map
+        initGoogleMap()
+
+        // Initialize signInButton
+       initSignInButton()
+    }
+
+    private fun initSignInButton() {
+        signInButton = findViewById(R.id.google_sign_in_button)
+
+        // Firebase Sign-in
+        oneTapClient = Identity.getSignInClient(this)
+        signUpRequest = BeginSignInRequest.builder()
+            .setGoogleIdTokenRequestOptions(
+                BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
+                    .setSupported(true)
+                    // Your server's client ID, not your Android client ID.
+                    .setServerClientId(getString(R.string.web_client_id))
+                    // Show all accounts on the device.
+                    .setFilterByAuthorizedAccounts(false)
+                    .build())
+            .build()
+
+        // Set the OnClickListener for signInButton
+        signInButton.setOnClickListener {
+            oneTapClient.beginSignIn(signUpRequest)
+                .addOnSuccessListener(this) { result ->
+                    try {
+                        startIntentSenderForResult(
+                            result.pendingIntent.intentSender, REQ_ONE_TAP,
+                            null, 0, 0, 0
+                        )
+                    } catch (e: IntentSender.SendIntentException) {
+                        Log.e(TAG, "Couldn't start One Tap UI: ${e.localizedMessage}")
+                    }
+                }
+                .addOnFailureListener(this) { e ->
+                    // No Google Accounts found. Just continue presenting the signed-out UI.
+                    Log.d(TAG, e.localizedMessage)
+                }
+        }
+    }
+
+
+    private fun initGoogleMap() {
+        // Find the FragmentContainerView that contains the map
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map_container) as? SupportMapFragment
 
         if (mapFragment == null) {
@@ -206,7 +252,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             return
         }
 
-    // Get the map asynchronously
+        // Get the map asynchronously
         mapFragment.getMapAsync { map ->
             val googleMap = map
 
@@ -222,7 +268,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                             val marker = MarkerOptions()
                                 .position(LatLng(benchmark.lat.toDouble(), benchmark.lon.toDouble()))
                                 .title(benchmark.name)
-                                .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHt}")
+                                .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHeight}")
                             map.addMarker(marker)
                         }
                     } else {
@@ -244,9 +290,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onStart() {
         super.onStart()
-        var currentUser = auth.currentUser
-        //TODO: hideSignInButton()
+        val currentUser = auth.currentUser
+        if (currentUser != null) { // Check if the user is signed in
+            hideSignInButton()
+        } else {
+            signInButton.visibility = View.VISIBLE
+        }
     }
+
 
     override fun onResume() {
         super.onResume()
@@ -269,12 +320,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         mMapFragment?.onLowMemory()
     }
 
-    //TODO: kotlin.UninitializedPropertyAccessException: lateinit property signInButton has not been initialized
-    /**
+    //TODO: com.locoquest.app.MainActivity: 10: Developer console is not set up correctly.
     private fun hideSignInButton(){
         signInButton.visibility = View.GONE
     }
-    **/
 
     private fun signOut(){
         Firebase.auth.signOut()
