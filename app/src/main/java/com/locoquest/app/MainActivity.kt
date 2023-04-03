@@ -205,6 +205,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         initGoogleMap()
 
         // Initialize signInButton
+       initSignInButton()
+    }
+
+    private fun initSignInButton() {
         signInButton = findViewById(R.id.google_sign_in_button)
 
         // Firebase Sign-in
