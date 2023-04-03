@@ -48,7 +48,7 @@ class BenchmarkServiceTest {
         assertEquals("Mount Everest", benchmark.name)
         assertEquals("27.988056", benchmark.lat)
         assertEquals("86.925278", benchmark.lon)
-        assertEquals("8848.86", benchmark.ellipHeight)
+        assertEquals("8848.86", benchmark.ellipseHeight)
         assertEquals("N/A", benchmark.posDatum)
         assertEquals("N/A", benchmark.posSource)
         assertEquals("N/A", benchmark.posOrder)
@@ -65,7 +65,7 @@ class BenchmarkServiceTest {
                 name = "Mount Everest",
                 lat = "27.988056",
                 lon = "86.925278",
-                ellipHeight = "8848.86",
+                ellipseHeight = "8848.86",
                 posDatum = "N/A",
                 posSource = "N/A",
                 posOrder = "N/A",
