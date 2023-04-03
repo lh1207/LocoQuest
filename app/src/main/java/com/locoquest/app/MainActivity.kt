@@ -268,7 +268,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                             val marker = MarkerOptions()
                                 .position(LatLng(benchmark.lat.toDouble(), benchmark.lon.toDouble()))
                                 .title(benchmark.name)
-                                .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHt}")
+                                .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHeight}")
                             map.addMarker(marker)
                         }
                     } else {
