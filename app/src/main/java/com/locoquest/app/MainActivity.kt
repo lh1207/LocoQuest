@@ -43,6 +43,7 @@ import com.google.android.gms.maps.model.PolygonOptions
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.GoogleMap
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
@@ -116,7 +117,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                                 if (task.isSuccessful) {
                                     // Sign in success, update UI with the signed-in user's information
                                     Log.d(TAG, "signInWithCredential:success")
-                                    hideSignInButton()
+                                    showDisplayName()
                                     Log.d(TAG, "Got ID token.")
                                 } else {
                                     // If sign in fails, display a message to the user.
@@ -206,10 +207,18 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
     **/
 
+    private fun showDisplayName(){
+        auth.currentUser?.let { user ->
+            supportActionBar?.let {
+                it.title = user.displayName
+                hideSignInButton()
+            }
+        }
+    }
+
     override fun onStart() {
         super.onStart()
-        var currentUser = auth.currentUser
-        hideSignInButton()
+        showDisplayName()
     }
 
     override fun onResume() {
@@ -333,11 +342,10 @@ companion object {
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            requestLocationPermission()
             return
         }
         map.isMyLocationEnabled = true
-        map.setOnMyLocationButtonClickListener { updateCamera = true; true }
+        map.setOnMyLocationButtonClickListener { updateCamera = true; false }
     }
 
     private fun stopLocationUpdates() {
