@@ -66,9 +66,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     // The Google Sign-In button.
     private lateinit var signInButton: SignInButton // Declare the variable here
 
-    // A flag indicating whether or not to show the One Tap UI.
-    private var showOneTapUI = true
-
     // The map fragment used for Google Maps.
     private var mMapFragment: SupportMapFragment? = null
 
@@ -132,8 +129,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     when (e.statusCode) {
                         CommonStatusCodes.CANCELED -> {
                             Log.d(TAG, "One-tap dialog was closed.")
-                            // Don't re-prompt the user.
-                            showOneTapUI = false
                         }
                         CommonStatusCodes.NETWORK_ERROR -> {
                             Log.d(TAG, "One-tap encountered a network error.")
@@ -148,38 +143,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     }
                 }
             }
-        }
-
-        // Firebase Sign-in
-        oneTapClient = Identity.getSignInClient(this)
-        signUpRequest = BeginSignInRequest.builder()
-            .setGoogleIdTokenRequestOptions(
-                BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
-                    .setSupported(true)
-                    // Your server's client ID, not your Android client ID.
-                    .setServerClientId(getString(R.string.web_client_id))
-                    // Show all accounts on the device.
-                    .setFilterByAuthorizedAccounts(false)
-                    .build())
-            .build()
-
-        if(!showOneTapUI) signInButton.visibility = View.INVISIBLE
-        signInButton.setOnClickListener {
-            oneTapClient.beginSignIn(signUpRequest)
-                .addOnSuccessListener(this) { result ->
-                    try {
-                        startIntentSenderForResult(
-                            result.pendingIntent.intentSender, REQ_ONE_TAP,
-                            null, 0, 0, 0
-                        )
-                    } catch (e: IntentSender.SendIntentException) {
-                        Log.e(TAG, "Couldn't start One Tap UI: ${e.localizedMessage}")
-                    }
-                }
-                .addOnFailureListener(this) { e ->
-                    // No Google Accounts found. Just continue presenting the signed-out UI.
-                    e.localizedMessage?.let { it1 -> Log.d(TAG, it1) }
-                }
         }
     }
 
@@ -198,6 +161,38 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             return
         }
         mMapFragment!!.getMapAsync(this)
+
+        // Firebase Sign-in
+        oneTapClient = Identity.getSignInClient(this)
+        signUpRequest = BeginSignInRequest.builder()
+            .setGoogleIdTokenRequestOptions(
+                BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
+                    .setSupported(true)
+                    // Your server's client ID, not your Android client ID.
+                    .setServerClientId(getString(R.string.web_client_id))
+                    // Show all accounts on the device.
+                    .setFilterByAuthorizedAccounts(false)
+                    .build())
+            .build()
+
+        //TODO: java.util.concurrent.ExecutionException: java.lang.SecurityException: GoogleCertificatesRslt: not allowed
+        signInButton.setOnClickListener {
+            oneTapClient.beginSignIn(signUpRequest)
+                .addOnSuccessListener(this) { result ->
+                    try {
+                        startIntentSenderForResult(
+                            result.pendingIntent.intentSender, REQ_ONE_TAP,
+                            null, 0, 0, 0
+                        )
+                    } catch (e: IntentSender.SendIntentException) {
+                        Log.e(TAG, "Couldn't start One Tap UI: ${e.localizedMessage}")
+                    }
+                }
+                .addOnFailureListener(this) { e ->
+                    // No Google Accounts found. Just continue presenting the signed-out UI.
+                    e.localizedMessage?.let { it1 -> Log.d(TAG, it1) }
+                }
+        }
     }
 
 /**
