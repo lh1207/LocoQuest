@@ -15,6 +15,7 @@ import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.location.Location
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
@@ -75,6 +76,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     // The Google Map instance.
     private lateinit var googleMap: GoogleMap
+
+    private var updateCamera = true
+    private lateinit var lastLocation: Location
 
     /**
      * Called when a permission request has been completed.
@@ -145,12 +149,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         }
 
-        // Find the map fragment and initialize it
-        mMapFragment = supportFragmentManager
-            .findFragmentById(R.id.map_container) as SupportMapFragment?
-        mMapFragment?.getMapAsync(this)
-
-
         // Firebase Sign-in
         oneTapClient = Identity.getSignInClient(this)
         signUpRequest = BeginSignInRequest.builder()
@@ -183,60 +181,24 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
                 .addOnFailureListener(this) { e ->
                     // No Google Accounts found. Just continue presenting the signed-out UI.
-                    Log.d(TAG, e.localizedMessage)
+                    e.localizedMessage?.let { it1 -> Log.d(TAG, it1) }
                 }
         }
-        // Get the SupportMapFragment and request notification
-        // when the map is ready to be used.
-        val mapFragment = supportFragmentManager
-            .findFragmentById(R.id.map_container) as SupportMapFragment
-        mapFragment.getMapAsync(this)
-
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-    // Find the FragmentContainerView that contains the map
-        val mapFragment = supportFragmentManager.findFragmentById(R.id.map_container) as? SupportMapFragment
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        if (mapFragment == null) {
+        mMapFragment = supportFragmentManager.findFragmentById(R.id.map_container) as? SupportMapFragment
+
+        if (mMapFragment == null) {
             Log.e(TAG, "Error: map fragment not found")
             return
         }
-
-    // Get the map asynchronously
-        mapFragment.getMapAsync { map ->
-            val googleMap = map
-
-            // Add the markers to the map
-            val benchmarkService: IBenchmarkService = BenchmarkService()
-            val pidList = listOf("AB1234", "CD5678")
-
-            lifecycleScope.launch {
-                try {
-                    Thread{
-                        val benchmarkList = benchmarkService.getBenchmarkData(pidList)
-                        if (benchmarkList != null) {
-                            benchmarkList.forEach { benchmark ->
-                                val marker = MarkerOptions()
-                                    .position(LatLng(benchmark.lat.toDouble(), benchmark.lon.toDouble()))
-                                    .title(benchmark.name)
-                                    .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHt}")
-                                Handler(Looper.getMainLooper()).post { map.addMarker(marker) }
-                            }
-                        } else {
-                            println("Error: unable to retrieve benchmark data")
-                        }
-                    }.start()
-                } catch (e: Exception) {
-                    println("Error: ${e.message}")
-                }
-            }
-        }
+        mMapFragment!!.getMapAsync(this)
     }
 
 /**
@@ -303,6 +265,31 @@ companion object {
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
 
+        // Add the markers to the map
+        val benchmarkService: IBenchmarkService = BenchmarkService()
+        val pidList = listOf("AB1234", "CD5678")
+
+        lifecycleScope.launch {
+            try {
+                Thread{
+                    val benchmarkList = benchmarkService.getBenchmarkData(pidList)
+                    if (benchmarkList != null) {
+                        benchmarkList.forEach { benchmark ->
+                            val marker = MarkerOptions()
+                                .position(LatLng(benchmark.lat.toDouble(), benchmark.lon.toDouble()))
+                                .title(benchmark.name)
+                                .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHt}")
+                            Handler(Looper.getMainLooper()).post { map.addMarker(marker) }
+                        }
+                    } else {
+                        println("Error: unable to retrieve benchmark data")
+                    }
+                }.start()
+            } catch (e: Exception) {
+                println("Error: ${e.message}")
+            }
+        }
+
         val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork
         val capabilities = connectivityManager.getNetworkCapabilities(network)
@@ -312,7 +299,6 @@ companion object {
         } else {
             Toast.makeText(this, "Unable to start location updates. Device is offline.", Toast.LENGTH_SHORT).show()
         }
-        this.googleMap = googleMap
 
         val position = CameraPosition.Builder()
             .target(LatLng(40.7128, -74.0060))
@@ -342,6 +328,21 @@ companion object {
             true
         }
 
+        map.setOnCameraMoveStartedListener { updateCamera = false }
+
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestLocationPermission()
+            return
+        }
+        map.isMyLocationEnabled = true
+        map.setOnMyLocationButtonClickListener { updateCamera = true; true }
     }
 
     private fun stopLocationUpdates() {
@@ -356,9 +357,10 @@ companion object {
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION), REQ_LOCATION)
+            requestLocationPermission()
             return
         }
+        fusedLocationClient.requestLocationUpdates(createLocationRequest(), locationCallback, null)
     }
 
 
@@ -372,6 +374,8 @@ companion object {
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
             locationResult.lastLocation.let { location ->
+                lastLocation = location
+                if(!updateCamera) return
                 val cameraUpdate = CameraUpdateFactory.newLatLngZoom(
                     LatLng(location.latitude, location.longitude), 15f)
                 googleMap.moveCamera(cameraUpdate)
