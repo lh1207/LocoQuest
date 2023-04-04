@@ -25,7 +25,7 @@ open class BenchmarkService : IBenchmarkService {
         val response = call?.execute()
 
         return if (response?.isSuccessful == true && response.body() != null) {
-            listOf(response.body()!!)
+            response.body()!!
         } else {
             null
         }

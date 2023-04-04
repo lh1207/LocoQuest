@@ -18,6 +18,8 @@ import android.graphics.Color
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.View
 import android.widget.Toast
@@ -216,18 +218,20 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
             lifecycleScope.launch {
                 try {
-                    val benchmarkList = benchmarkService.getBenchmarkData(pidList)
-                    if (benchmarkList != null) {
-                        benchmarkList.forEach { benchmark ->
-                            val marker = MarkerOptions()
-                                .position(LatLng(benchmark.lat.toDouble(), benchmark.lon.toDouble()))
-                                .title(benchmark.name)
-                                .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHt}")
-                            map.addMarker(marker)
+                    Thread{
+                        val benchmarkList = benchmarkService.getBenchmarkData(pidList)
+                        if (benchmarkList != null) {
+                            benchmarkList.forEach { benchmark ->
+                                val marker = MarkerOptions()
+                                    .position(LatLng(benchmark.lat.toDouble(), benchmark.lon.toDouble()))
+                                    .title(benchmark.name)
+                                    .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHt}")
+                                Handler(Looper.getMainLooper()).post { map.addMarker(marker) }
+                            }
+                        } else {
+                            println("Error: unable to retrieve benchmark data")
                         }
-                    } else {
-                        println("Error: unable to retrieve benchmark data")
-                    }
+                    }.start()
                 } catch (e: Exception) {
                     println("Error: ${e.message}")
                 }
