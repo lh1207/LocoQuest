@@ -15,12 +15,14 @@ import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.graphics.drawable.Drawable
 import android.location.Location
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.transition.Transition
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -30,6 +32,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.CircleCrop
+import com.bumptech.glide.request.target.CustomTarget
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.SignInClient
@@ -79,6 +84,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private var updateCamera = true
     private lateinit var lastLocation: Location
+    private lateinit var menu: Menu
 
     /**
      * Called when a permission request has been completed.
@@ -201,6 +207,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        this.menu = menu
         menuInflater.inflate(R.menu.main, menu)
         return true
     }
@@ -230,6 +237,20 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         auth.currentUser?.let { user ->
             supportActionBar?.let {
                 it.title = user.displayName
+
+                Glide.with(this)
+                    .load(user.photoUrl)
+                    .transform(CircleCrop())
+                    .into(object : CustomTarget<Drawable>() {
+                        override fun onResourceReady(
+                            resource: Drawable,
+                            transition: com.bumptech.glide.request.transition.Transition<in Drawable>?
+                        ) {
+                            menu.findItem(R.id.menu_item_account).icon = resource
+                        }
+
+                        override fun onLoadCleared(placeholder: Drawable?) {}
+                    })
             }
         }
     }
@@ -262,14 +283,17 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private fun signOut(){
         Firebase.auth.signOut()
-        supportActionBar?.let { it.title = "LocoQuest" }
+        supportActionBar?.let {
+            it.title = "LocoQuest"
+            menu.findItem(R.id.menu_item_account).icon = ContextCompat.getDrawable(this, R.drawable.account)
+        }
     }
 
-// Map section
-companion object {
-    const val MY_PERMISSIONS_REQUEST_LOCATION = 1
-    const val REQ_ONE_TAP = 2
-}
+    companion object {
+        const val MY_PERMISSIONS_REQUEST_LOCATION = 1
+        const val REQ_ONE_TAP = 2
+    }
+
     private fun requestLocationPermission() {
         if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
