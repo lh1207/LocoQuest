@@ -22,11 +22,9 @@ import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.transition.Transition
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -58,8 +56,6 @@ import kotlinx.coroutines.launch
 
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback {
-    // The name of the MainActivity class.
-    private val TAG : String = MainActivity::class.java.name
 
     // The Firebase authentication instance.
     private val auth = FirebaseAuth.getInstance()
@@ -85,6 +81,36 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private var updateCamera = true
     private lateinit var lastLocation: Location
     private lateinit var menu: Menu
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        signInButton = findViewById(R.id.google_sign_in_button)
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+        mMapFragment = supportFragmentManager.findFragmentById(R.id.map_container) as? SupportMapFragment
+
+        if (mMapFragment == null) {
+            Log.e(TAG, "Error: map fragment not found")
+            return
+        }
+        mMapFragment!!.getMapAsync(this)
+
+        // Firebase Sign-in
+        oneTapClient = Identity.getSignInClient(this)
+        signUpRequest = BeginSignInRequest.builder()
+            .setGoogleIdTokenRequestOptions(
+                BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
+                    .setSupported(true)
+                    // Your server's client ID, not your Android client ID.
+                    .setServerClientId(getString(R.string.web_client_id))
+                    // Show all accounts on the device.
+                    .setFilterByAuthorizedAccounts(false)
+                    .build())
+            .build()
+    }
 
     /**
      * Called when a permission request has been completed.
@@ -122,7 +148,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                                 if (task.isSuccessful) {
                                     // Sign in success, update UI with the signed-in user's information
                                     Log.d(TAG, "signInWithCredential:success")
-                                    showDisplayName()
+                                    displayUserInfo()
                                     Log.d(TAG, "Got ID token.")
                                 } else {
                                     // If sign in fails, display a message to the user.
@@ -154,34 +180,50 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        this.menu = menu
+        menuInflater.inflate(R.menu.main, menu)
+        return true
+    }
 
-        signInButton = findViewById(R.id.google_sign_in_button)
-
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-
-        mMapFragment = supportFragmentManager.findFragmentById(R.id.map_container) as? SupportMapFragment
-
-        if (mMapFragment == null) {
-            Log.e(TAG, "Error: map fragment not found")
-            return
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.menu_item_account -> {
+                if(auth.currentUser == null){
+                    login()
+                }else{
+                    signOut()
+                }
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
         }
-        mMapFragment!!.getMapAsync(this)
+    }
 
-        // Firebase Sign-in
-        oneTapClient = Identity.getSignInClient(this)
-        signUpRequest = BeginSignInRequest.builder()
-            .setGoogleIdTokenRequestOptions(
-                BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
-                    .setSupported(true)
-                    // Your server's client ID, not your Android client ID.
-                    .setServerClientId(getString(R.string.web_client_id))
-                    // Show all accounts on the device.
-                    .setFilterByAuthorizedAccounts(false)
-                    .build())
-            .build()
+    override fun onStart() {
+        super.onStart()
+        displayUserInfo()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        mMapFragment?.onResume()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        mMapFragment?.onPause()
+        stopLocationUpdates()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        mMapFragment?.onDestroy()
+    }
+
+    override fun onLowMemory() {
+        super.onLowMemory()
+        mMapFragment?.onLowMemory()
     }
 
     private fun login(){
@@ -206,34 +248,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        this.menu = menu
-        menuInflater.inflate(R.menu.main, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.menu_item_account -> {
-                if(auth.currentUser == null){
-                    login()
-                }else{
-                    signOut()
-                }
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
-        }
-    }
-
-    /**
-    private fun addMapListeners() {
-        // Add listeners for various map events
-        googleMap.setOnMapClickListener(onMapClickListener)
-    }
-    **/
-
-    private fun showDisplayName(){
+    private fun displayUserInfo(){
         auth.currentUser?.let { user ->
             supportActionBar?.let {
                 it.title = user.displayName
@@ -255,43 +270,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        showDisplayName()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        mMapFragment?.onResume()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        mMapFragment?.onPause()
-        stopLocationUpdates()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        mMapFragment?.onDestroy()
-    }
-
-    override fun onLowMemory() {
-        super.onLowMemory()
-        mMapFragment?.onLowMemory()
-    }
-
     private fun signOut(){
         Firebase.auth.signOut()
         supportActionBar?.let {
             it.title = "LocoQuest"
             menu.findItem(R.id.menu_item_account).icon = ContextCompat.getDrawable(this, R.drawable.account)
         }
-    }
-
-    companion object {
-        const val MY_PERMISSIONS_REQUEST_LOCATION = 1
-        const val REQ_ONE_TAP = 2
     }
 
     private fun requestLocationPermission() {
@@ -376,6 +360,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(locationCallback)
     }
+
     private fun startLocationUpdates(){
         if (ActivityCompat.checkSelfPermission(
                 this,
@@ -392,7 +377,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         googleMap.isMyLocationEnabled = true
         googleMap.setOnMyLocationButtonClickListener { updateCamera = true; false }
     }
-
 
     private fun createLocationRequest(): LocationRequest {
         return LocationRequest.create()
@@ -413,12 +397,17 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-
     fun isOnline(): Boolean {
         val connectivityManager = applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork
         val capabilities = connectivityManager.getNetworkCapabilities(network)
         return capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+    }
+
+    companion object {
+        const val MY_PERMISSIONS_REQUEST_LOCATION = 1
+        const val REQ_ONE_TAP = 2
+        private val TAG : String = MainActivity::class.java.name
     }
 
 }
