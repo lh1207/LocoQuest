@@ -22,6 +22,8 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -35,15 +37,15 @@ import com.google.android.gms.common.SignInButton
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.location.*
-import com.google.android.gms.maps.*
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.PolygonOptions
-import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.GoogleMap
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
@@ -174,9 +176,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     .setFilterByAuthorizedAccounts(false)
                     .build())
             .build()
+    }
 
-        //TODO: java.util.concurrent.ExecutionException: java.lang.SecurityException: GoogleCertificatesRslt: not allowed
-        signInButton.setOnClickListener {
+    private fun login(){
+        try {
             oneTapClient.beginSignIn(signUpRequest)
                 .addOnSuccessListener(this) { result ->
                     try {
@@ -192,10 +195,31 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     // No Google Accounts found. Just continue presenting the signed-out UI.
                     e.localizedMessage?.let { it1 -> Log.d(TAG, it1) }
                 }
+        }catch (ex: java.lang.Exception){
+            ex.localizedMessage?.let { Log.d(TAG, it) }
         }
     }
 
-/**
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.main, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.menu_item_account -> {
+                if(auth.currentUser == null){
+                    login()
+                }else{
+                    signOut()
+                }
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    /**
     private fun addMapListeners() {
         // Add listeners for various map events
         googleMap.setOnMapClickListener(onMapClickListener)
@@ -206,7 +230,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         auth.currentUser?.let { user ->
             supportActionBar?.let {
                 it.title = user.displayName
-                hideSignInButton()
             }
         }
     }
@@ -237,12 +260,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         mMapFragment?.onLowMemory()
     }
 
-    private fun hideSignInButton(){
-        signInButton.visibility = View.GONE
-    }
-
     private fun signOut(){
         Firebase.auth.signOut()
+        supportActionBar?.let { it.title = "LocoQuest" }
     }
 
 // Map section

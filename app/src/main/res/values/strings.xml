@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">LocoQuest</string>
     <string name="web_client_id">303169782560-m3sbeeeb9e77tlqsumq9tt1huutuggk0.apps.googleusercontent.com</string>
+    <string name="account">Account</string>
 </resources>
