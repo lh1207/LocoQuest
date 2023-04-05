@@ -249,7 +249,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 companion object {
     const val MY_PERMISSIONS_REQUEST_LOCATION = 1
     const val REQ_ONE_TAP = 2
-    const val REQ_LOCATION = 3
 }
     private fun requestLocationPermission() {
         if (ContextCompat.checkSelfPermission(this,
@@ -328,19 +327,6 @@ companion object {
         }
 
         map.setOnCameraMoveStartedListener { updateCamera = false }
-
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
-        map.isMyLocationEnabled = true
-        map.setOnMyLocationButtonClickListener { updateCamera = true; false }
     }
 
     private fun stopLocationUpdates() {
@@ -359,6 +345,8 @@ companion object {
             return
         }
         fusedLocationClient.requestLocationUpdates(createLocationRequest(), locationCallback, null)
+        googleMap.isMyLocationEnabled = true
+        googleMap.setOnMyLocationButtonClickListener { updateCamera = true; false }
     }
 
 
