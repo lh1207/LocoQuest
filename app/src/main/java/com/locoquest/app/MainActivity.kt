@@ -29,6 +29,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
@@ -52,6 +53,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import com.locoquest.app.databinding.ActivityMainBinding
 import kotlinx.coroutines.launch
 
 
@@ -82,9 +84,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var lastLocation: Location
     private lateinit var menu: Menu
 
+    //Bottom Navigation Bar
+    private lateinit var binding : ActivityMainBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        replaceFragment(Home())
 
         signInButton = findViewById(R.id.google_sign_in_button)
 
@@ -97,6 +104,19 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             return
         }
         mMapFragment!!.getMapAsync(this)
+
+
+        binding.bottomNavigationView.setOnItemSelectedListener {
+            when(it.itemId){
+                R.id.home -> replaceFragment(Home())
+                R.id.profile -> replaceFragment(Profile())
+                R.id.settings -> replaceFragment(Settings())
+
+                else ->{
+                }
+            }
+            true
+        }
 
         // Firebase Sign-in
         oneTapClient = Identity.getSignInClient(this)
@@ -408,6 +428,15 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         const val MY_PERMISSIONS_REQUEST_LOCATION = 1
         const val REQ_ONE_TAP = 2
         private val TAG : String = MainActivity::class.java.name
+    }
+
+
+    //Bottom Navigation Bar
+    private fun replaceFragment(fragment : Fragment) {
+        val fragmentManager = supportFragmentManager
+        val fragmentTransaction = fragmentManager.beginTransaction()
+        fragmentTransaction.replace(R.id.frame_layout,fragment)
+        fragmentTransaction.commit()
     }
 
 }
