@@ -85,7 +85,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var menu: Menu
 
     //Bottom Navigation Bar
-    private lateinit var binding : ActivityMainBinding
+    private lateinit var binding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -97,7 +97,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        mMapFragment = supportFragmentManager.findFragmentById(R.id.map_container) as? SupportMapFragment
+        mMapFragment =
+            supportFragmentManager.findFragmentById(R.id.map_container) as? SupportMapFragment
 
         if (mMapFragment == null) {
             Log.e(TAG, "Error: map fragment not found")
@@ -107,12 +108,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
 
         binding.bottomNavigationView.setOnItemSelectedListener {
-            when(it.itemId){
+            when (it.itemId) {
                 R.id.home -> replaceFragment(Home())
                 R.id.profile -> replaceFragment(Profile())
                 R.id.settings -> replaceFragment(Settings())
 
-                else ->{
+                else -> {
                 }
             }
             true
@@ -128,7 +129,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     .setServerClientId(getString(R.string.web_client_id))
                     // Show all accounts on the device.
                     .setFilterByAuthorizedAccounts(false)
-                    .build())
+                    .build()
+            )
             .build()
     }
 
@@ -200,18 +202,30 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
+    /**
+     * Function: onCreateOptionsMenu
+     * Description: Override function to create options menu.
+     * @param menu: The menu object.
+     * @return: Boolean value indicating if the menu creation was successful.
+     */
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         this.menu = menu
         menuInflater.inflate(R.menu.main, menu)
         return true
     }
 
+    /**
+     * Function: onOptionsItemSelected
+     * Description: Override function to handle options item selection.
+     * @param item: The selected menu item.
+     * @return: Boolean value indicating if the item selection was handled successfully.
+     */
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.menu_item_account -> {
-                if(auth.currentUser == null){
+                if (auth.currentUser == null) {
                     login()
-                }else{
+                } else {
                     signOut()
                 }
                 true
@@ -220,33 +234,57 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
+    /**
+     * Function: onStart
+     * Description: Override function called when the activity is starting.
+     */
     override fun onStart() {
         super.onStart()
         displayUserInfo()
     }
 
+    /**
+     * Function: onResume
+     * Description: Override function called when the activity is resumed.
+     */
     override fun onResume() {
         super.onResume()
         mMapFragment?.onResume()
     }
 
+    /**
+     * Function: onPause
+     * Description: Override function called when the activity is paused.
+     */
     override fun onPause() {
         super.onPause()
         mMapFragment?.onPause()
         stopLocationUpdates()
     }
 
+    /**
+     * Function: onDestroy
+     * Description: Override function called when the activity is being destroyed.
+     */
     override fun onDestroy() {
         super.onDestroy()
         mMapFragment?.onDestroy()
     }
 
+    /**
+     * Function: onLowMemory
+     * Description: Override function called when the system is running low on memory.
+     */
     override fun onLowMemory() {
         super.onLowMemory()
         mMapFragment?.onLowMemory()
     }
 
-    private fun login(){
+    /**
+     * Function: login
+     * Description: Private function to handle user login.
+     */
+    private fun login() {
         try {
             oneTapClient.beginSignIn(signUpRequest)
                 .addOnSuccessListener(this) { result ->
@@ -263,12 +301,16 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     // No Google Accounts found. Just continue presenting the signed-out UI.
                     e.localizedMessage?.let { it1 -> Log.d(TAG, it1) }
                 }
-        }catch (ex: java.lang.Exception){
+        } catch (ex: java.lang.Exception) {
             ex.localizedMessage?.let { Log.d(TAG, it) }
         }
     }
 
-    private fun displayUserInfo(){
+    /**
+     * Function: displayUserInfo
+     * Description: Private function to display user information.
+     */
+    private fun displayUserInfo() {
         auth.currentUser?.let { user ->
             supportActionBar?.let {
                 it.title = user.displayName
@@ -290,24 +332,43 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    private fun signOut(){
+    /**
+     * Function: signOut
+     * Description: Private function to handle user sign out.
+     */
+    private fun signOut() {
         Firebase.auth.signOut()
         supportActionBar?.let {
             it.title = "LocoQuest"
-            menu.findItem(R.id.menu_item_account).icon = ContextCompat.getDrawable(this, R.drawable.account)
+            menu.findItem(R.id.menu_item_account).icon =
+                ContextCompat.getDrawable(this, R.drawable.account)
         }
     }
 
+    /**
+     * Function: requestLocationPermission
+     * Description: Private function to request location permission.
+     */
     private fun requestLocationPermission() {
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
 
-            ActivityCompat.requestPermissions(this,
+            ActivityCompat.requestPermissions(
+                this,
                 arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                MY_PERMISSIONS_REQUEST_LOCATION)
+                MY_PERMISSIONS_REQUEST_LOCATION
+            )
         }
     }
 
+    /**
+     * Function: onMapReady
+     * Description: Override function called when the map is ready.
+     * @param map: The GoogleMap object.
+     */
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
 
@@ -317,12 +378,17 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
         lifecycleScope.launch {
             try {
-                Thread{
+                Thread {
                     val benchmarkList = benchmarkService.getBenchmarkData(pidList)
                     if (benchmarkList != null) {
                         benchmarkList.forEach { benchmark ->
                             val marker = MarkerOptions()
-                                .position(LatLng(benchmark.lat.toDouble(), benchmark.lon.toDouble()))
+                                .position(
+                                    LatLng(
+                                        benchmark.lat.toDouble(),
+                                        benchmark.lon.toDouble()
+                                    )
+                                )
                                 .title(benchmark.name)
                                 .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHt}")
                             Handler(Looper.getMainLooper()).post { map.addMarker(marker) }
@@ -336,14 +402,22 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         }
 
-        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val connectivityManager =
+            getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork
         val capabilities = connectivityManager.getNetworkCapabilities(network)
 
-        if (capabilities != null && (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR))) {
+        if (capabilities != null && (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || capabilities.hasTransport(
+                NetworkCapabilities.TRANSPORT_CELLULAR
+            ))
+        ) {
             startLocationUpdates()
         } else {
-            Toast.makeText(this, "Unable to start location updates. Device is offline.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                this,
+                "Unable to start location updates. Device is offline.",
+                Toast.LENGTH_SHORT
+            ).show()
         }
 
         val position = CameraPosition.Builder()
@@ -377,11 +451,20 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         map.setOnCameraMoveStartedListener { updateCamera = false }
     }
 
+    /**
+     * Function: stopLocationUpdates
+     * Description: Function to stop location updates.
+     */
     private fun stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(locationCallback)
     }
 
-    private fun startLocationUpdates(){
+    /**
+     * Function: startLocationUpdates
+     * Description: Function to start location updates.
+     */
+    private fun startLocationUpdates() {
+        // Check if location permissions are granted
         if (ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -390,14 +473,21 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
+            // Request location permissions if not granted
             requestLocationPermission()
             return
         }
+        // Request location updates using fusedLocationClient
         fusedLocationClient.requestLocationUpdates(createLocationRequest(), locationCallback, null)
         googleMap.isMyLocationEnabled = true
         googleMap.setOnMyLocationButtonClickListener { updateCamera = true; false }
     }
 
+    /**
+     * Function: createLocationRequest
+     * Description: Function to create a LocationRequest object.
+     * @return LocationRequest: The created LocationRequest object.
+     */
     private fun createLocationRequest(): LocationRequest {
         return LocationRequest.create()
             .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
@@ -405,6 +495,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             .setFastestInterval(1000) // Update location at least every 1 second
     }
 
+    /**
+     * LocationCallback object to handle location updates.
+     */
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
             locationResult.lastLocation?.let { location ->
@@ -422,8 +515,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
+    /**
+     * Function: isOnline
+     * Description: Function to check if the device is online.
+     * @return Boolean: True if the device is online, false otherwise.
+     */
     fun isOnline(): Boolean {
-        val connectivityManager = applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val connectivityManager =
+            applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork
         val capabilities = connectivityManager.getNetworkCapabilities(network)
         return capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
@@ -432,16 +531,18 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     companion object {
         const val MY_PERMISSIONS_REQUEST_LOCATION = 1
         const val REQ_ONE_TAP = 2
-        private val TAG : String = MainActivity::class.java.name
+        private val TAG: String = MainActivity::class.java.name
     }
 
-
-    //Bottom Navigation Bar
-    private fun replaceFragment(fragment : Fragment) {
+    /**
+     * Function: replaceFragment
+     * Description: Function to replace a fragment in the Bottom Navigation Bar.
+     * @param fragment: The fragment to be replaced.
+     */
+    private fun replaceFragment(fragment: Fragment) {
         val fragmentManager = supportFragmentManager
         val fragmentTransaction = fragmentManager.beginTransaction()
-        fragmentTransaction.replace(R.id.frame_layout,fragment)
+        fragmentTransaction.replace(R.id.frame_layout, fragment)
         fragmentTransaction.commit()
     }
-
 }
