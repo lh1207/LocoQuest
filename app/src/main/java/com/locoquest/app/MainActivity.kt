@@ -407,12 +407,19 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
-            locationResult.lastLocation.let { location ->
-                lastLocation = location
-                if(!updateCamera) return
-                val cameraUpdate = CameraUpdateFactory.newLatLngZoom(
-                    LatLng(location.latitude, location.longitude), 15f)
-                googleMap.moveCamera(cameraUpdate)
+            locationResult.lastLocation?.let { location ->
+                if (location != null) {
+                    lastLocation = location
+                }
+                if (!updateCamera) return
+                val latitude = location.latitude
+                val longitude = location.longitude
+                if (latitude != null && longitude != null) {
+                    val cameraUpdate = CameraUpdateFactory.newLatLngZoom(
+                        LatLng(latitude, longitude), 15f
+                    )
+                    googleMap.moveCamera(cameraUpdate)
+                }
             }
         }
     }
