@@ -378,9 +378,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
         lifecycleScope.launch {
             try {
+                // Fetch benchmark data in a background thread
                 Thread {
                     val benchmarkList = benchmarkService.getBenchmarkData(pidList)
                     if (benchmarkList != null) {
+                        // Create marker options with benchmark data
                         benchmarkList.forEach { benchmark ->
                             val marker = MarkerOptions()
                                 .position(
@@ -391,6 +393,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                                 )
                                 .title(benchmark.name)
                                 .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHt}")
+                            // Add marker to the map on the main/UI thread
                             Handler(Looper.getMainLooper()).post { map.addMarker(marker) }
                         }
                     } else {
@@ -402,6 +405,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         }
 
+        // Check network connectivity and start location updates accordingly
         val connectivityManager =
             getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork
