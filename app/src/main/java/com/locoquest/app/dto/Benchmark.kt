@@ -8,14 +8,14 @@ data class Benchmark(
     val name: String,
     val lat: String,
     val lon: String,
-    val ellipHeight: String,
+    val ellipseHeight: String,
     val posDatum: String,
     val posSource: String,
     val posOrder: String,
-    val orthoHt: String,
+    val orthoHeight: String,
     val vertDatum: String,
     val vertSource: String,
-    val vertOrder: String )
+    val vertOrder: String, )
 
 
 

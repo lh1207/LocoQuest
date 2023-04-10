@@ -144,7 +144,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
-        grantResults: IntArray
+        grantResults: IntArray,
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         startLocationUpdates()
@@ -392,7 +392,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                                     )
                                 )
                                 .title(benchmark.name)
-                                .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHt}")
+                                .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHeight}")
                             // Add marker to the map on the main/UI thread
                             Handler(Looper.getMainLooper()).post { map.addMarker(marker) }
                         }
