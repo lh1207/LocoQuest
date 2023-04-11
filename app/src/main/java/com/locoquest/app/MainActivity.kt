@@ -59,25 +59,15 @@ import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
-    // The Firebase authentication instance.
+    // Instance declarations
     private val auth = FirebaseAuth.getInstance()
-
-    // The One Tap client used for Google Sign-In.
     private lateinit var oneTapClient: SignInClient
-
-    // The sign-in request used for Google Sign-In.
     private lateinit var signUpRequest: BeginSignInRequest
-
     // The Google Sign-In button.
     private lateinit var signInButton: SignInButton // Declare the variable here
-
     // The map fragment used for Google Maps.
     private var mMapFragment: SupportMapFragment? = null
-
-    // The FusedLocationProviderClient instance.
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-
-    // The Google Map instance.
     private lateinit var googleMap: GoogleMap
 
     private var updateCamera = true
@@ -379,10 +369,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         lifecycleScope.launch {
             try {
                 // Fetch benchmark data in a background thread
+                // Create marker options with benchmark data
+                // Add marker to the map on the main/UI thread
                 Thread {
                     val benchmarkList = benchmarkService.getBenchmarkData(pidList)
                     if (benchmarkList != null) {
-                        // Create marker options with benchmark data
                         benchmarkList.forEach { benchmark ->
                             val marker = MarkerOptions()
                                 .position(
@@ -393,7 +384,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                                 )
                                 .title(benchmark.name)
                                 .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHeight}")
-                            // Add marker to the map on the main/UI thread
                             Handler(Looper.getMainLooper()).post { map.addMarker(marker) }
                         }
                     } else {
@@ -448,7 +438,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
         // Add listener for map click events
         map.setOnMapClickListener { latLng ->
-            // Handle map click events
             true
         }
 
