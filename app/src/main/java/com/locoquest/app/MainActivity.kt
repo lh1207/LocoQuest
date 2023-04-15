@@ -383,7 +383,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                                     )
                                 )
                                 .title(benchmark.name)
-                                .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHeight}")
+                                .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHt}")
                             Handler(Looper.getMainLooper()).post { map.addMarker(marker) }
                         }
                     } else {
