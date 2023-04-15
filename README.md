@@ -66,7 +66,21 @@ Tasked Stories for Sprint 2
    - https://github.com/users/lh1207/projects/7/views/1
    - https://github.com/users/lh1207/projects/10/views/1
    - https://github.com/users/lh1207/projects/11/views/1
-
+   
+Milestones and Tasks for Sprint 3:
+   - Implement logic to show all benchmarks on the map
+   - Add a toggle button to switch between GPS route and benchmark location on the map
+   - Create a list of completed benchmarks and add functionality to add/remove benchmarks from the list
+   - Create a user profile page with basic user information and the ability to edit/update the profile
+   - Integrate the completed benchmarks list and user profile page with Firebase
+   
+Tasked Stories for Sprint 3
+   - https://github.com/users/lh1207/projects/14/views/1
+   - https://github.com/users/lh1207/projects/15/views/1
+   - https://github.com/users/lh1207/projects/16/views/1
+   - https://github.com/users/lh1207/projects/17/views/1
+   - https://github.com/users/lh1207/projects/18/views/1
+   
 Scrum Roles, and who will fill those roles
   - Product Owner: Eric Miller
   - Scrum Master: Sam Dappen
