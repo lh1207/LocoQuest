@@ -17,7 +17,6 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.location.Location
-import android.location.Location.distanceBetween
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
@@ -57,12 +56,11 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
-import com.locoquest.app.dao.Database
+import com.locoquest.app.dao.DB
 import com.locoquest.app.databinding.ActivityMainBinding
 import com.locoquest.app.dto.Benchmark
 import com.locoquest.app.dto.User
 import kotlinx.coroutines.launch
-import kotlin.math.abs
 
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
@@ -84,7 +82,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private var benchmarks: ArrayList<Benchmark> = ArrayList()
     private var markers: ArrayList<Marker> = ArrayList()
     private var user: User = User("", "", ArrayList())
-    private lateinit var db: Database
+    private val hue = 200f
+    private var loadingMarkers = false
+    private lateinit var db: DB
 
     //Bottom Navigation Bar
     private lateinit var binding: ActivityMainBinding
@@ -94,10 +94,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         replaceFragment(Home())
-        /*Thread{
-            db = Room.databaseBuilder(this, Database::class.java, "db").build()
+        Thread{
+            db = Room.databaseBuilder(this, DB::class.java, "db").build()
             user = db.localUserDAO().getUser()
-        }.start()*/
+        }.start()
 
         signInButton = findViewById(R.id.google_sign_in_button)
 
@@ -177,9 +177,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                                     // Sign in success, update UI with the signed-in user's information
                                     Log.d(TAG, "signInWithCredential:success")
                                     displayUserInfo()
-                                    /*auth.currentUser?.let {
-                                        Thread{db.localUserDAO().insert(User(it.uid, it.displayName, ArrayList()))}
-                                    }*/
+                                    loadMarkers()
+                                    auth.currentUser?.let {
+                                        user = User(it.uid, it.displayName, ArrayList())
+                                        Thread{db.localUserDAO().insert(user)}.start()
+                                    }
                                     Log.d(TAG, "Got ID token.")
                                 } else {
                                     // If sign in fails, display a message to the user.
@@ -351,15 +353,24 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     }
 
     override fun onMarkerClick(marker: Marker): Boolean {
-        user.let {
-            val inProximity = isWithin500Feet(marker.position.latitude,
+        var inProximity = false
+        lastLocation.let {
+            inProximity = isWithin500Feet(marker.position.latitude,
                 marker.position.longitude,
                 lastLocation.latitude,
                 lastLocation.longitude)
+        }
 
-            if(!it.benchmarks.contains(marker.position) && inProximity) {
-                it.benchmarks.add(marker.position)
-                marker.setIcon(BitmapDescriptorFactory.defaultMarker(200f))
+        inProximity = true // for testing
+
+        if(!user.benchmarks.contains(marker.position)) {
+            if(inProximity) {
+                user.benchmarks.add(marker.position)
+                Thread{db.localUserDAO().insert(user)}.start()
+                marker.setIcon(BitmapDescriptorFactory.defaultMarker(hue))
+                Toast.makeText(this, "Benchmark saved", Toast.LENGTH_SHORT).show()
+            }else{
+                Toast.makeText(this, "Not close enough to save", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -453,6 +464,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 menu.findItem(R.id.menu_item_account).icon =
                     ContextCompat.getDrawable(this, R.drawable.account)
             }
+            loadMarkers()
+            user = User("", "", ArrayList())
         }
     }
 
@@ -476,6 +489,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     }
 
     private fun loadMarkers(){
+        if(loadingMarkers) return
+        loadingMarkers = true
         googleMap.clear()
 
         // Add the markers to the map
@@ -503,13 +518,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                                 .title(benchmark.name)
                                 .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHt}")
 
-                            user.let {
-                                if(it.benchmarks.contains(LatLng(benchmark.lat.toDouble(), benchmark.lon.toDouble())))
-                                    marker = marker.icon(BitmapDescriptorFactory.defaultMarker(200f))
-                            }
+                            if(user.benchmarks.contains(LatLng(benchmark.lat.toDouble(), benchmark.lon.toDouble())))
+                                marker = marker.icon(BitmapDescriptorFactory.defaultMarker(hue))
 
                             Handler(Looper.getMainLooper()).post { googleMap.addMarker(marker)?.let { markers.add(it) } }
                         }
+                        Handler(Looper.getMainLooper()).post { Toast.makeText(applicationContext, "markers loaded", Toast.LENGTH_SHORT).show() }
                     } else {
                         println("Error: unable to retrieve benchmark data")
                     }
@@ -518,6 +532,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 println("Error: ${e.message}")
             }
         }
+        loadingMarkers = false
     }
 
     /**
