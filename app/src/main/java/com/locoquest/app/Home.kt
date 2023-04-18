@@ -35,6 +35,7 @@ import com.google.android.gms.maps.model.MarkerOptions
 import com.locoquest.app.dto.Benchmark
 import com.locoquest.app.dto.User
 import kotlinx.coroutines.launch
+import kotlin.system.exitProcess
 
 class Home : Fragment(), GoogleMap.OnMarkerClickListener {
 
@@ -165,19 +166,19 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
         loadingMarkers = true
         googleMap.clear()
 
-        // Add the markers to the map
         val benchmarkService: IBenchmarkService = BenchmarkService()
 
         lifecycleScope.launch {
             try {
-                // Fetch benchmark data in a background thread
-                // Create marker options with benchmark data
-                // Add marker to the map on the main/UI thread
-                var target = googleMap.cameraPosition.target
+                val target = googleMap.cameraPosition.target
                 Thread {
                     val benchmarkList = benchmarkService.getBenchmarks(target, 10.0)
-                    benchmarkList?.let { benchmarks = ArrayList(it) }
                     if (benchmarkList != null) {
+                        if(benchmarkList.isEmpty()){
+                            loadingMarkers = false
+                            return@Thread
+                        }
+                        benchmarks = ArrayList(benchmarkList)
                         benchmarkList.forEach { benchmark ->
                             var marker = MarkerOptions()
                                 .position(
@@ -262,6 +263,7 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
                     LatLng(latitude, longitude), 15f
                 )
                 googleMap.moveCamera(cameraUpdate)
+                loadMarkers()
             }
         }
     }
