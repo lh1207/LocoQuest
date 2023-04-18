@@ -94,10 +94,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         replaceFragment(Home())
-        Thread{
-            db = Room.databaseBuilder(this, DB::class.java, "db").build()
-            user = db.localUserDAO().getUser()
-        }.start()
 
         signInButton = findViewById(R.id.google_sign_in_button)
 
@@ -138,6 +134,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                     .build()
             )
             .build()
+
+        Thread{
+            db = Room.databaseBuilder(this, DB::class.java, "db").build()
+            val id = if (auth.currentUser == null) "" else auth.currentUser!!.uid
+            user = db.localUserDAO().getUser(id)
+        }.start()
     }
 
     /**

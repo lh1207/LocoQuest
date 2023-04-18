@@ -9,8 +9,8 @@ import com.locoquest.app.dto.User
 
 @Dao
 interface ILocalUserDAO {
-    @Query("SELECT * FROM user LIMIT 1")
-    fun getUser() : User
+    @Query("SELECT * FROM user WHERE uid = :id")
+    fun getUser(id: String) : User
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(user: User)
