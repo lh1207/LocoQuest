@@ -9,6 +9,25 @@
 
     <!-- TODO: Update blank fragment layout -->
 
+    <FrameLayout
+        android:id="@+id/frame_layout"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+    </FrameLayout>
+
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/map_container"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:layout="@layout/fragment_map"
+        app:layout_constraintBottom_toTopOf="@id/google_sign_in_button"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:layout_editor_absoluteX="-36dp" />
+
     <com.google.android.gms.common.SignInButton
         android:id="@+id/google_sign_in_button"
         android:visibility="gone"
@@ -18,13 +37,7 @@
         android:layout_marginBottom="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/map_container"
         app:layout_constraintVertical_bias="0.5" />
-
-    <androidx.fragment.app.FragmentContainerView
-        class="com.google.android.gms.maps.SupportMapFragment"
-        android:id="@+id/map_fragment"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        tools:layout="@layout/fragment_map" />
 
 </RelativeLayout>
