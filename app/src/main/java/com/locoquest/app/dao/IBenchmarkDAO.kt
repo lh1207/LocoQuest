@@ -12,5 +12,8 @@ import retrofit2.http.Query
 interface IBenchmarkDAO {
     @GET("pid")
     fun getBenchmarkByPid(@Query("pid") pid: String): Call<List<Benchmark>>
+
+    @GET("radial")
+    fun getBenchmarksByRadius(@Query("lat") lat: Double, @Query("lon") lon: Double, @Query("radius") r: Double): Call<List<Benchmark>>
 }
 
