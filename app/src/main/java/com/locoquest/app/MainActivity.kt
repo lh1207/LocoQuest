@@ -49,6 +49,7 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.PolygonOptions
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
@@ -79,9 +80,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        replaceFragment(Home())
+        setContentView(R.layout.activity_main)
+
 
         signInButton = findViewById(R.id.google_sign_in_button)
 
@@ -96,13 +96,31 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
         mMapFragment!!.getMapAsync(this)
 
-        binding.bottomNavigationView.setOnItemSelectedListener {
 
-            when(it.itemId){
-                R.id.home -> replaceFragment(Home())
-                R.id.profile -> replaceFragment(Profile())
-                R.id.settings -> replaceFragment(Settings())
-                else ->{
+        fun loadFragment(fragment: Fragment) {
+            val transaction = supportFragmentManager.beginTransaction()
+            transaction.replace(R.id.container,fragment)
+            transaction.commit()
+        }
+
+        loadFragment(Home())
+
+        var bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigationView)
+        bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.home -> {
+                    loadFragment(Home())
+                    true
+                }
+                R.id.profile -> {
+                    loadFragment(Profile())
+                    true
+                }
+                R.id.settings -> {
+                    loadFragment(Settings())
+                    true
+                }
+                else -> {
                 }
             }
             true
@@ -492,7 +510,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
      */
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
-            locationResult.lastLocation?.let { location ->
+            locationResult.lastLocation.let { location ->
                 if (location != null) {
                     lastLocation = location
                 }
@@ -524,20 +542,5 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         const val MY_PERMISSIONS_REQUEST_LOCATION = 1
         const val REQ_ONE_TAP = 2
         private val TAG: String = MainActivity::class.java.name
-    }
-
-    /**
-     * Function: replaceFragment
-     * Description: Function to replace a fragment in the Bottom Navigation Bar.
-     * @param fragment: The fragment to be replaced.
-     */
-    private fun replaceFragment(fragment : Fragment){
-
-        val fragmentManager = supportFragmentManager
-        val fragmentTransaction = fragmentManager.beginTransaction()
-        fragmentTransaction.replace(R.id.frame_layout,fragment)
-        fragmentTransaction.commit()
-
-
     }
 }
