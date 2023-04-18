@@ -9,7 +9,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/profile_fragment"
+        android:text="@string/map_fragment"
         android:textColor="#212121"
         android:textSize="26sp"
         app:layout_constraintBottom_toBottomOf="parent"
