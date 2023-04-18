@@ -17,6 +17,7 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.location.Location
+import android.location.Location.distanceBetween
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
@@ -31,6 +32,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.room.Room
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.bumptech.glide.request.target.CustomTarget
@@ -45,7 +47,6 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -56,6 +57,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import com.locoquest.app.dao.Database
 import com.locoquest.app.databinding.ActivityMainBinding
 import com.locoquest.app.dto.Benchmark
 import com.locoquest.app.dto.User
@@ -81,7 +83,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private var menu: Menu? = null
     private var benchmarks: ArrayList<Benchmark> = ArrayList()
     private var markers: ArrayList<Marker> = ArrayList()
-    private var user: User? = null
+    private var user: User = User("", "", ArrayList())
+    private lateinit var db: Database
 
     //Bottom Navigation Bar
     private lateinit var binding: ActivityMainBinding
@@ -91,6 +94,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         replaceFragment(Home())
+        /*Thread{
+            db = Room.databaseBuilder(this, Database::class.java, "db").build()
+            user = db.localUserDAO().getUser()
+        }.start()*/
 
         signInButton = findViewById(R.id.google_sign_in_button)
 
@@ -170,6 +177,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                                     // Sign in success, update UI with the signed-in user's information
                                     Log.d(TAG, "signInWithCredential:success")
                                     displayUserInfo()
+                                    /*auth.currentUser?.let {
+                                        Thread{db.localUserDAO().insert(User(it.uid, it.displayName, ArrayList()))}
+                                    }*/
                                     Log.d(TAG, "Got ID token.")
                                 } else {
                                     // If sign in fails, display a message to the user.
@@ -341,10 +351,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     }
 
     override fun onMarkerClick(marker: Marker): Boolean {
-        user?.let {
-            val m = 0.0001 // 11.1 m
-            val inProximity = abs(marker.position.latitude - lastLocation.latitude) < m
-                    && abs(marker.position.longitude - lastLocation.longitude) < m
+        user.let {
+            val inProximity = isWithin500Feet(marker.position.latitude,
+                marker.position.longitude,
+                lastLocation.latitude,
+                lastLocation.longitude)
+
             if(!it.benchmarks.contains(marker.position) && inProximity) {
                 it.benchmarks.add(marker.position)
                 marker.setIcon(BitmapDescriptorFactory.defaultMarker(200f))
@@ -355,6 +367,24 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         // for the default behavior to occur (which is for the camera to move such that the
         // marker is centered and for the marker's info window to open, if it has one).
         return false
+    }
+
+    private fun isWithin500Feet(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Boolean {
+        val R = 6371e3 // Earth's radius in meters
+        val φ1 = Math.toRadians(lat1)
+        val φ2 = Math.toRadians(lat2)
+        val Δφ = Math.toRadians(lat2 - lat1)
+        val Δλ = Math.toRadians(lon2 - lon1)
+
+        val a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ / 2) * Math.sin(Δλ / 2)
+        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+
+        val d = R * c // distance between the two points in meters
+        val feet = d * 3.28084 // convert distance to feet
+
+        return feet <= 500.0
     }
 
     /**
@@ -473,7 +503,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                                 .title(benchmark.name)
                                 .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHt}")
 
-                            user?.let {
+                            user.let {
                                 if(it.benchmarks.contains(LatLng(benchmark.lat.toDouble(), benchmark.lon.toDouble())))
                                     marker = marker.icon(BitmapDescriptorFactory.defaultMarker(200f))
                             }

@@ -69,8 +69,12 @@ dependencies {
     implementation 'com.google.firebase:firebase-auth-ktx:21.0.3'
 
     // Room DB
-    implementation 'androidx.room:room-common:2.4.2'
-    implementation 'androidx.room:room-ktx:2.4.2'
+    def room_version = "2.4.2"
+    implementation "androidx.room:room-runtime:$room_version"
+    annotationProcessor "androidx.room:room-compiler:$room_version"
+    implementation "androidx.room:room-common:$room_version"
+    implementation "androidx.room:room-ktx:$room_version"
+    testImplementation "androidx.room:room-testing:$room_version"
 
     // Koin for Android
     implementation "io.insert-koin:koin-android:3.1.4"
@@ -102,5 +106,4 @@ dependencies {
     androidTestImplementation 'androidx.arch.core:core-testing:2.1.0'
 
     debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
-
 }
