@@ -96,14 +96,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
         mMapFragment!!.getMapAsync(this)
 
-
         binding.bottomNavigationView.setOnItemSelectedListener {
-            when (it.itemId) {
+
+            when(it.itemId){
                 R.id.home -> replaceFragment(Home())
                 R.id.profile -> replaceFragment(Profile())
                 R.id.settings -> replaceFragment(Settings())
-
-                else -> {
+                else ->{
                 }
             }
             true
@@ -532,10 +531,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
      * Description: Function to replace a fragment in the Bottom Navigation Bar.
      * @param fragment: The fragment to be replaced.
      */
-    private fun replaceFragment(fragment: Fragment) {
+    private fun replaceFragment(fragment : Fragment){
+
         val fragmentManager = supportFragmentManager
         val fragmentTransaction = fragmentManager.beginTransaction()
-        fragmentTransaction.replace(R.id.frame_layout, fragment)
+        fragmentTransaction.replace(R.id.frame_layout,fragment)
         fragmentTransaction.commit()
+
+
     }
 }
