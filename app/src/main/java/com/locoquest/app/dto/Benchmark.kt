@@ -1,7 +1,10 @@
 package com.locoquest.app.dto
 import androidx.room.Entity
+import androidx.room.PrimaryKey
+
 @Entity(tableName="benchmark")
 data class Benchmark(
+    @PrimaryKey
     val pid: String,
     val name: String,
     val lat: String,
