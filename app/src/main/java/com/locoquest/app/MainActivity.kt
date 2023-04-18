@@ -45,8 +45,11 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.BitmapDescriptor
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.PolygonOptions
 import com.google.firebase.auth.FirebaseAuth
@@ -54,10 +57,13 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.locoquest.app.databinding.ActivityMainBinding
+import com.locoquest.app.dto.Benchmark
+import com.locoquest.app.dto.User
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 
-class MainActivity : AppCompatActivity(), OnMapReadyCallback {
+class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
     // Instance declarations
     private val auth = FirebaseAuth.getInstance()
@@ -72,7 +78,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private var updateCamera = true
     private lateinit var lastLocation: Location
-    private lateinit var menu: Menu
+    private var menu: Menu? = null
+    private var benchmarks: ArrayList<Benchmark> = ArrayList()
+    private var markers: ArrayList<Marker> = ArrayList()
+    private var user: User? = null
 
     //Bottom Navigation Bar
     private lateinit var binding: ActivityMainBinding
@@ -271,90 +280,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     /**
-     * Function: login
-     * Description: Private function to handle user login.
-     */
-    private fun login() {
-        try {
-            oneTapClient.beginSignIn(signUpRequest)
-                .addOnSuccessListener(this) { result ->
-                    try {
-                        startIntentSenderForResult(
-                            result.pendingIntent.intentSender, REQ_ONE_TAP,
-                            null, 0, 0, 0
-                        )
-                    } catch (e: IntentSender.SendIntentException) {
-                        Log.e(TAG, "Couldn't start One Tap UI: ${e.localizedMessage}")
-                    }
-                }
-                .addOnFailureListener(this) { e ->
-                    // No Google Accounts found. Just continue presenting the signed-out UI.
-                    e.localizedMessage?.let { it1 -> Log.d(TAG, it1) }
-                }
-        } catch (ex: java.lang.Exception) {
-            ex.localizedMessage?.let { Log.d(TAG, it) }
-        }
-    }
-
-    /**
-     * Function: displayUserInfo
-     * Description: Private function to display user information.
-     */
-    private fun displayUserInfo() {
-        auth.currentUser?.let { user ->
-            supportActionBar?.let {
-                it.title = user.displayName
-
-                Glide.with(this)
-                    .load(user.photoUrl)
-                    .transform(CircleCrop())
-                    .into(object : CustomTarget<Drawable>() {
-                        override fun onResourceReady(
-                            resource: Drawable,
-                            transition: com.bumptech.glide.request.transition.Transition<in Drawable>?
-                        ) {
-                            menu.findItem(R.id.menu_item_account).icon = resource
-                        }
-
-                        override fun onLoadCleared(placeholder: Drawable?) {}
-                    })
-            }
-        }
-    }
-
-    /**
-     * Function: signOut
-     * Description: Private function to handle user sign out.
-     */
-    private fun signOut() {
-        Firebase.auth.signOut()
-        supportActionBar?.let {
-            it.title = "LocoQuest"
-            menu.findItem(R.id.menu_item_account).icon =
-                ContextCompat.getDrawable(this, R.drawable.account)
-        }
-    }
-
-    /**
-     * Function: requestLocationPermission
-     * Description: Private function to request location permission.
-     */
-    private fun requestLocationPermission() {
-        if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                MY_PERMISSIONS_REQUEST_LOCATION
-            )
-        }
-    }
-
-    /**
      * Function: onMapReady
      * Description: Override function called when the map is ready.
      * @param map: The GoogleMap object.
@@ -362,38 +287,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
 
-        // Add the markers to the map
-        val benchmarkService: IBenchmarkService = BenchmarkService()
-        val pidList = listOf("AB1234", "CD5678")
+        map.setOnMarkerClickListener(this)
 
-        lifecycleScope.launch {
-            try {
-                // Fetch benchmark data in a background thread
-                // Create marker options with benchmark data
-                // Add marker to the map on the main/UI thread
-                Thread {
-                    val benchmarkList = benchmarkService.getBenchmarkData(pidList)
-                    if (benchmarkList != null) {
-                        benchmarkList.forEach { benchmark ->
-                            val marker = MarkerOptions()
-                                .position(
-                                    LatLng(
-                                        benchmark.lat.toDouble(),
-                                        benchmark.lon.toDouble()
-                                    )
-                                )
-                                .title(benchmark.name)
-                                .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHt}")
-                            Handler(Looper.getMainLooper()).post { map.addMarker(marker) }
-                        }
-                    } else {
-                        println("Error: unable to retrieve benchmark data")
-                    }
-                }.start()
-            } catch (e: Exception) {
-                println("Error: ${e.message}")
-            }
-        }
+        loadMarkers()
 
         // Check network connectivity and start location updates accordingly
         val connectivityManager =
@@ -442,6 +338,156 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
 
         map.setOnCameraMoveStartedListener { updateCamera = false }
+    }
+
+    override fun onMarkerClick(marker: Marker): Boolean {
+        user?.let {
+            val m = 0.0001 // 11.1 m
+            val inProximity = abs(marker.position.latitude - lastLocation.latitude) < m
+                    && abs(marker.position.longitude - lastLocation.longitude) < m
+            if(!it.benchmarks.contains(marker.position) && inProximity) {
+                it.benchmarks.add(marker.position)
+                marker.setIcon(BitmapDescriptorFactory.defaultMarker(200f))
+            }
+        }
+
+        // Return false to indicate that we have not consumed the event and that we wish
+        // for the default behavior to occur (which is for the camera to move such that the
+        // marker is centered and for the marker's info window to open, if it has one).
+        return false
+    }
+
+    /**
+     * Function: login
+     * Description: Private function to handle user login.
+     */
+    private fun login() {
+        try {
+            oneTapClient.beginSignIn(signUpRequest)
+                .addOnSuccessListener(this) { result ->
+                    try {
+                        startIntentSenderForResult(
+                            result.pendingIntent.intentSender, REQ_ONE_TAP,
+                            null, 0, 0, 0
+                        )
+                    } catch (e: IntentSender.SendIntentException) {
+                        Log.e(TAG, "Couldn't start One Tap UI: ${e.localizedMessage}")
+                    }
+                }
+                .addOnFailureListener(this) { e ->
+                    // No Google Accounts found. Just continue presenting the signed-out UI.
+                    e.localizedMessage?.let { it1 -> Log.d(TAG, it1) }
+                }
+        } catch (ex: java.lang.Exception) {
+            ex.localizedMessage?.let { Log.d(TAG, it) }
+        }
+    }
+
+    /**
+     * Function: displayUserInfo
+     * Description: Private function to display user information.
+     */
+    private fun displayUserInfo() {
+        auth.currentUser?.let { user ->
+            supportActionBar?.let {
+                it.title = user.displayName
+
+                Glide.with(this)
+                    .load(user.photoUrl)
+                    .transform(CircleCrop())
+                    .into(object : CustomTarget<Drawable>() {
+                        override fun onResourceReady(
+                            resource: Drawable,
+                            transition: com.bumptech.glide.request.transition.Transition<in Drawable>?
+                        ) {
+                            menu?.let {menu ->
+                                menu.findItem(R.id.menu_item_account).icon = resource
+                            }
+                        }
+
+                        override fun onLoadCleared(placeholder: Drawable?) {}
+                    })
+            }
+        }
+    }
+
+    /**
+     * Function: signOut
+     * Description: Private function to handle user sign out.
+     */
+    private fun signOut() {
+        Firebase.auth.signOut()
+        supportActionBar?.let {
+            it.title = "LocoQuest"
+            menu?.let { menu ->
+                menu.findItem(R.id.menu_item_account).icon =
+                    ContextCompat.getDrawable(this, R.drawable.account)
+            }
+        }
+    }
+
+    /**
+     * Function: requestLocationPermission
+     * Description: Private function to request location permission.
+     */
+    private fun requestLocationPermission() {
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                MY_PERMISSIONS_REQUEST_LOCATION
+            )
+        }
+    }
+
+    private fun loadMarkers(){
+        googleMap.clear()
+
+        // Add the markers to the map
+        val benchmarkService: IBenchmarkService = BenchmarkService()
+        val pidList = listOf("AB1234", "CD5678")
+
+        lifecycleScope.launch {
+            try {
+                // Fetch benchmark data in a background thread
+                // Create marker options with benchmark data
+                // Add marker to the map on the main/UI thread
+                var target = googleMap.cameraPosition.target
+                Thread {
+                    val benchmarkList = benchmarkService.getBenchmarks(target, 10.0)
+                    benchmarkList?.let { benchmarks = ArrayList(it) }
+                    if (benchmarkList != null) {
+                        benchmarkList.forEach { benchmark ->
+                            var marker = MarkerOptions()
+                                .position(
+                                    LatLng(
+                                        benchmark.lat.toDouble(),
+                                        benchmark.lon.toDouble()
+                                    )
+                                )
+                                .title(benchmark.name)
+                                .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHt}")
+
+                            user?.let {
+                                if(it.benchmarks.contains(LatLng(benchmark.lat.toDouble(), benchmark.lon.toDouble())))
+                                    marker = marker.icon(BitmapDescriptorFactory.defaultMarker(200f))
+                            }
+
+                            Handler(Looper.getMainLooper()).post { googleMap.addMarker(marker)?.let { markers.add(it) } }
+                        }
+                    } else {
+                        println("Error: unable to retrieve benchmark data")
+                    }
+                }.start()
+            } catch (e: Exception) {
+                println("Error: ${e.message}")
+            }
+        }
     }
 
     /**
@@ -493,10 +539,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
      */
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
-            locationResult.lastLocation?.let { location ->
-                if (location != null) {
-                    lastLocation = location
-                }
+            locationResult.lastLocation.let { location ->
+                lastLocation = location
                 if (!updateCamera) return
                 val latitude = location.latitude
                 val longitude = location.longitude
@@ -504,6 +548,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     LatLng(latitude, longitude), 15f
                 )
                 googleMap.moveCamera(cameraUpdate)
+                loadMarkers()
             }
         }
     }
