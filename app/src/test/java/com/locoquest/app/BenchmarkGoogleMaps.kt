@@ -39,19 +39,5 @@ class MapsTest {
     fun testMapNotNull() {
         assertNotNull(mapView.getMapAsync { })
     }
-
-    // Below is a mock unit test for adding markers, currented commented out as it was causing
-    // compilation errors, and is not needed in current build
-
-    /*@Test
-    fun testMarkerAdded() {
-        val markerOptions = MarkerOptions()
-            .position(LatLng(37.4219999,-122.0840575))
-            .title("Googleplex")
-        `when`(googleMap.addMarker(markerOptions)).thenReturn(mock(Marker::class.java))
-        val marker = googleMap.addMarker(markerOptions)
-        assertNotNull(marker)
-        verify(googleMap, times(1)).addMarker(markerOptions)
-    }*/
 }
 
