@@ -7,6 +7,6 @@ import androidx.room.PrimaryKey
 data class User(
     @PrimaryKey
     val uid: String,
-    val displayName: String?,
-    val benchmarks: HashMap<String, Benchmark>
+    var displayName: String = "",
+    val benchmarks: HashMap<String, Benchmark> = HashMap()
 )

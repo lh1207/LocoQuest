@@ -3,6 +3,8 @@ package com.locoquest.app
 import BenchmarkService
 import IBenchmarkService
 import android.Manifest
+import android.content.Context
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.location.Location
 import android.net.ConnectivityManager
@@ -10,7 +12,7 @@ import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import androidx.fragment.app.Fragment
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,6 +20,7 @@ import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getSystemService
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
@@ -26,26 +29,31 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.GoogleMap.CancelableCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
 import com.locoquest.app.AppModule.Companion.user
+import com.locoquest.app.Converters.Companion.toMarkerOptions
 import com.locoquest.app.dto.Benchmark
 import kotlinx.coroutines.launch
 
 class Home : Fragment(), GoogleMap.OnMarkerClickListener {
 
     private var googleMap: GoogleMap? = null
-    private var benchmarks: ArrayList<Benchmark> = ArrayList()
     private var markers: ArrayList<Marker> = ArrayList()
     private val hue = 200f
+    private var cameraIsMoving = false
+    private val cameraAnimationDuration = 2000
+    private val defaultCameraZoom = 15f
     private var loadingMarkers = false
-    private var updateCamera = true
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private var cameraMovedByUser = false
+    private var updateCameraOnLocationUpdate = true
     private var mapFragment: SupportMapFragment? = null
-    private var markerToBenchmark: HashMap<LatLng, Benchmark> = HashMap()
+    private var markerToBenchmark: HashMap<Marker, Benchmark> = HashMap()
+    private var benchmarkToMarker: HashMap<Benchmark, Marker> = HashMap()
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,14 +70,24 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
 
         mapFragment?.getMapAsync { map ->
             googleMap = map
-
-            updateCameraWithLastLocation()
             startLocationUpdates()
 
-            map.setOnCameraMoveStartedListener { updateCamera = false }
+            map.setOnCameraMoveListener {
+                loadMarkers()
+            }
+            map.setOnCameraMoveStartedListener{
+                updateCameraOnLocationUpdate = !cameraMovedByUser
+                cameraMovedByUser = true
+            }
             map.setOnMarkerClickListener(this)
+            map.setOnMyLocationButtonClickListener {
+                updateCameraWithLastLocation()
+                cameraMovedByUser = false
+                updateCameraOnLocationUpdate = true
+                true
+            }
 
-            loadMarkers()
+            updateCameraWithLastLocation()
         }
 
         return view
@@ -99,28 +117,27 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
 
     override fun onMarkerClick(marker: Marker): Boolean {
         var inProximity = false
+        val lastLocation = lastLocation()
         if(lastLocation != null) {
             inProximity = isWithin500Feet(
-                marker.position.latitude,
-                marker.position.longitude,
-                lastLocation!!.latitude,
-                lastLocation!!.longitude
+                marker.position,
+                LatLng(lastLocation.latitude, lastLocation.longitude)
             )
         }
 
-        inProximity = true // for testing
+        //inProximity = true // for testing
 
-        if(!markerToBenchmark.contains(marker.position)) return true
+        if(!markerToBenchmark.contains(marker)) return true
 
-        val benchmark = markerToBenchmark[marker.position]
+        val benchmark = markerToBenchmark[marker]
         if(!user.benchmarks.contains(benchmark?.pid)) {
             if(inProximity) {
                 user.benchmarks[benchmark!!.pid] = benchmark
                 Thread{AppModule.db?.localUserDAO()?.insert(user)}.start()
                 marker.setIcon(BitmapDescriptorFactory.defaultMarker(hue))
-                Toast.makeText(context, "Benchmark saved", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Benchmark completed", Toast.LENGTH_SHORT).show()
             }else{
-                Toast.makeText(context, "Not close enough to save", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Not close enough to complete", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -130,12 +147,12 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
         return false
     }
 
-    private fun isWithin500Feet(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Boolean {
+    private fun isWithin500Feet(latlng1: LatLng, latlng2: LatLng): Boolean {
         val R = 6371e3 // Earth's radius in meters
-        val φ1 = Math.toRadians(lat1)
-        val φ2 = Math.toRadians(lat2)
-        val Δφ = Math.toRadians(lat2 - lat1)
-        val Δλ = Math.toRadians(lon2 - lon1)
+        val φ1 = Math.toRadians(latlng1.latitude)
+        val φ2 = Math.toRadians(latlng2.latitude)
+        val Δφ = Math.toRadians(latlng2.latitude - latlng1.latitude)
+        val Δλ = Math.toRadians(latlng2.longitude - latlng1.longitude)
 
         val a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
                 Math.cos(φ1) * Math.cos(φ2) *
@@ -148,54 +165,84 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
         return feet <= 500.0
     }
 
-    private fun loadMarkers(){
+    fun loadMarkers(){
         if(loadingMarkers || googleMap == null) return
         loadingMarkers = true
         val map = googleMap!!
-        map.clear()
-
         val benchmarkService: IBenchmarkService = BenchmarkService()
 
         lifecycleScope.launch {
             try {
-                val target = map.cameraPosition.target
+                val bounds = map.projection.visibleRegion.latLngBounds
                 Thread {
-                    val benchmarkList = benchmarkService.getBenchmarks(target, 10.0)
-                    if (benchmarkList != null) {
-                        if(benchmarkList.isEmpty()){
-                            loadingMarkers = false
-                            return@Thread
+                    try {
+                        val benchmarkList = benchmarkService.getBenchmarks(bounds)
+                        if (benchmarkList != null) {
+                            if (benchmarkList.isEmpty() || isSameBenchmarks(benchmarkList)) {
+                                loadingMarkers = false
+                                return@Thread
+                            }
+
+                            markerToBenchmark.clear()
+                            benchmarkToMarker.clear()
+
+                            Handler(Looper.getMainLooper()).post {
+                                map.clear()
+                                goToSelectedBenchmark()
+                                benchmarkList.forEach { addBenchmarkToMap(it) }
+                            }
+                        } else {
+                            println("Error: unable to retrieve benchmark data")
                         }
-                        markerToBenchmark.clear()
-                        benchmarks = ArrayList(benchmarkList)
-                        benchmarkList.forEach { benchmark ->
-                            var marker = MarkerOptions()
-                                .position(
-                                    LatLng(
-                                        benchmark.lat.toDouble(),
-                                        benchmark.lon.toDouble()
-                                    )
-                                )
-                                .title(benchmark.name)
-                                .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHt}")
-
-                            markerToBenchmark[marker.position] = benchmark
-
-                            if(user.benchmarks.contains(benchmark.pid))
-                                marker = marker.icon(BitmapDescriptorFactory.defaultMarker(hue))
-
-                            Handler(Looper.getMainLooper()).post { map.addMarker(marker)?.let { markers.add(it) } }
-                        }
-                        Handler(Looper.getMainLooper()).post { Toast.makeText(context, "markers loaded", Toast.LENGTH_SHORT).show() }
-                    } else {
-                        println("Error: unable to retrieve benchmark data")
+                    }catch (e: ConcurrentModificationException){
+                        Log.e("LoadMarkers", e.toString())
                     }
+                    loadingMarkers = false
                 }.start()
             } catch (e: Exception) {
                 println("Error: ${e.message}")
             }
         }
-        loadingMarkers = false
+    }
+
+    private fun isSameBenchmarks(benchmarkList: List<Benchmark>) : Boolean{
+        return benchmarkList.sortedBy { x -> x.pid } == ArrayList(markerToBenchmark.values.toList()).sortedBy { x -> x.pid }
+    }
+
+    private fun goToSelectedBenchmark() {
+        if (selectedBenchmark == null) return
+
+        updateCameraOnLocationUpdate = false
+        cameraMovedByUser = true
+        googleMap?.moveCamera(
+            CameraUpdateFactory.newLatLngZoom(
+                LatLng(
+                    selectedBenchmark?.lat?.toDouble()!!,
+                    selectedBenchmark?.lon?.toDouble()!!
+                ), 15f
+            )
+        )
+
+        val selectedMarker =
+            if (benchmarkToMarker.contains(selectedBenchmark))
+                benchmarkToMarker[selectedBenchmark]
+            else addBenchmarkToMap(selectedBenchmark!!)
+
+        selectedMarker?.showInfoWindow()
+
+        selectedBenchmark = null
+    }
+
+    private fun addBenchmarkToMap(benchmark: Benchmark) : Marker? {
+        var options = toMarkerOptions(benchmark)
+        if(user.benchmarks.contains(benchmark.pid))
+            options = options.icon(BitmapDescriptorFactory.defaultMarker(hue))
+        val marker = googleMap!!.addMarker(options)
+        return if(marker?.let { markers.add(it) } == true) {
+            markerToBenchmark[marker] = benchmark
+            benchmarkToMarker[benchmark] = marker
+            marker
+        } else null
     }
 
     fun startLocationUpdates() {
@@ -223,10 +270,7 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
             }
             // Request location updates using fusedLocationClient
             fusedLocationClient.requestLocationUpdates(createLocationRequest(), locationCallback, Looper.getMainLooper())
-            googleMap?.let {
-                it.isMyLocationEnabled = true
-                it.setOnMyLocationButtonClickListener { updateCamera = true; false }
-            }
+            googleMap?.let { it.isMyLocationEnabled = true }
         } else {
             Toast.makeText(
                 context,
@@ -261,25 +305,54 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
             .setFastestInterval(1000) // Update location at least every 1 second
     }
 
-    private fun updateCameraWithLastLocation(){
-        if(lastLocation == null || googleMap == null) return
-        googleMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(
-            LatLng(lastLocation!!.latitude, lastLocation!!.longitude), 15f
-        ))
+    private fun updateCameraWithLastLocation() {
+        val lastLocation = lastLocation()
+        if (lastLocation.provider == "" || googleMap == null || cameraIsMoving) return
+        cameraMovedByUser = false
+        cameraIsMoving = true
+        googleMap?.animateCamera(
+            CameraUpdateFactory.newLatLngZoom(
+                LatLng(lastLocation.latitude, lastLocation.longitude), defaultCameraZoom
+            ), cameraAnimationDuration, object : CancelableCallback {
+                override fun onFinish() {
+                    loadMarkers()
+                    cameraIsMoving = false
+                }
+                override fun onCancel() { cameraIsMoving = false }
+            })
     }
 
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
             locationResult.lastLocation.let { location ->
-                lastLocation = location
-                if (!updateCamera) return
+                lastLocation(location)
+                if (!updateCameraOnLocationUpdate) return
                 updateCameraWithLastLocation()
-                loadMarkers()
             }
         }
     }
 
+    private fun prefs(): SharedPreferences {
+        return requireContext().getSharedPreferences("LocoQuest", Context.MODE_PRIVATE)
+    }
+
+    private fun lastLocation(location: Location){
+        with (prefs().edit()) {
+            putFloat("lat", location.latitude.toFloat())
+            putFloat("lon", location.longitude.toFloat())
+            putString("provider", location.provider)
+            apply()
+        }
+    }
+
+    private fun lastLocation() : Location {
+        val location = Location(prefs().getString("provider", ""))
+        location.latitude = prefs().getFloat("lat", 0f).toDouble()
+        location.longitude = prefs().getFloat("lon", 0f).toDouble()
+        return location
+    }
+
     companion object{
-        var lastLocation: Location? = null
+        var selectedBenchmark: Benchmark? = null
     }
 }

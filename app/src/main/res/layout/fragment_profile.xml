@@ -1,7 +1,15 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools">
 
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
     <!-- Title -->
     <TextView
         android:id="@+id/titleTextView"
@@ -76,60 +84,15 @@
         android:textSize="24sp"
         android:textStyle="bold" />
 
-    <!-- List of completed benchmarks -->
-    <ScrollView
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/benchmarks"
+        tools:listitem="@layout/benchmark"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/completedBenchmarksTextView"
-        android:layout_marginTop="8dp">
+        android:layout_height="match_parent"
+        android:layout_below="@+id/completedBenchmarksTextView"
+        android:layout_alignParentBottom="true" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <!-- Placeholder benchmark item -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Benchmark 1"
-                android:textSize="18sp"
-                android:padding="8dp" />
-
-            <!-- Placeholder benchmark item -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Benchmark 2"
-                android:textSize="18sp"
-                android:padding="8dp" />
-
-            <!-- Placeholder benchmark item -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Benchmark 3"
-                android:textSize="18sp"
-                android:padding="8dp" />
-
-            <!-- Placeholder benchmark item -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Benchmark 4"
-                android:textSize="18sp"
-                android:padding="8dp" />
-
-            <!-- Placeholder benchmark item -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Benchmark 5"
-                android:textSize="18sp"
-                android:padding="8dp" />
-
-        </LinearLayout>
-
+        </RelativeLayout>
     </ScrollView>
 
-</RelativeLayout>
+</FrameLayout>

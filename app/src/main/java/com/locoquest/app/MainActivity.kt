@@ -7,32 +7,19 @@ remote server, and authenticating with Firebase.
  */
 package com.locoquest.app
 
-import BenchmarkService
-import IBenchmarkService
-import android.Manifest
-import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
-import android.content.pm.PackageManager
-import android.graphics.Color
 import android.graphics.drawable.Drawable
-import android.location.Location
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
-import androidx.room.RoomDatabase
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.bumptech.glide.request.target.CustomTarget
@@ -42,25 +29,16 @@ import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.android.gms.common.SignInButton
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
-import com.google.android.gms.location.*
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MarkerOptions
-import com.google.android.gms.maps.model.PolygonOptions
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import com.locoquest.app.AppModule.Companion.db
+import com.locoquest.app.AppModule.Companion.guest
+import com.locoquest.app.AppModule.Companion.user
 import com.locoquest.app.dao.BenchmarkDatabase
-import com.locoquest.app.databinding.ActivityMainBinding
-import com.locoquest.app.dto.Benchmark
 import com.locoquest.app.dto.User
-import kotlinx.coroutines.launch
 
 
 class MainActivity : AppCompatActivity() {
@@ -71,18 +49,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var signInButton: SignInButton // Declare the variable here
     private lateinit var menu: Menu
     private lateinit var home: Home
+    private var switching = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         signInButton = findViewById(R.id.google_sign_in_button)
-
-        fun loadFragment(fragment: Fragment) {
-            val transaction = supportFragmentManager.beginTransaction()
-            transaction.replace(R.id.container,fragment)
-            transaction.commit()
-        }
 
         home = Home()
         loadFragment(home)
@@ -120,16 +93,11 @@ class MainActivity : AppCompatActivity() {
             .build()
 
         Thread{
-            AppModule.db = Room.databaseBuilder(this, BenchmarkDatabase::class.java, "db")
+            db = Room.databaseBuilder(this, BenchmarkDatabase::class.java, "db")
                 .fallbackToDestructiveMigration().build()
             if (auth.currentUser != null)
-                AppModule.user = User(auth.currentUser!!.uid, auth.currentUser!!.displayName, HashMap())
-
-            val userDao = AppModule.db!!.localUserDAO()
-            val tmpUser = userDao.getUser(AppModule.user.uid)
-            if(tmpUser == null) {
-                userDao.insert(AppModule.user)
-            }else AppModule.user = tmpUser
+                user = User(auth.currentUser!!.uid)
+            switchUser()
         }.start()
     }
 
@@ -165,6 +133,8 @@ class MainActivity : AppCompatActivity() {
                         auth.signInWithCredential(firebaseCredential)
                             .addOnCompleteListener(this) { task ->
                                 if (task.isSuccessful) {
+                                    user = User(auth.currentUser!!.uid, auth.currentUser!!.displayName!!, HashMap())
+                                    switchUser()
                                     displayUserInfo()
                                     Log.d(TAG, "signInWithCredential:success")
                                 } else {
@@ -260,7 +230,7 @@ class MainActivity : AppCompatActivity() {
     private fun displayUserInfo() {
         auth.currentUser?.let { user ->
             supportActionBar?.let {
-                it.title = user.displayName
+                it.title = if(AppModule.user.displayName == "") user.displayName else AppModule.user.displayName
 
                 Glide.with(this)
                     .load(user.photoUrl)
@@ -289,7 +259,30 @@ class MainActivity : AppCompatActivity() {
             it.title = "LocoQuest"
             menu.findItem(R.id.menu_item_account).icon =
                 ContextCompat.getDrawable(this, R.drawable.account)
+
+            user = guest
+            switchUser()
         }
+    }
+
+    private fun switchUser(){
+        if(!switching)
+            Thread{
+                switching = true
+                val userDao = db!!.localUserDAO()
+                val tmpUser = userDao.getUser(user.uid)
+                if(tmpUser == null) {
+                    userDao.insert(user)
+                }else user = tmpUser
+                Handler(Looper.getMainLooper()).post{home.loadMarkers()}
+                switching = false
+            }.start()
+    }
+
+    private fun loadFragment(fragment: Fragment) {
+        val transaction = supportFragmentManager.beginTransaction()
+        transaction.replace(R.id.container,fragment)
+        transaction.commit()
     }
 
     companion object {
