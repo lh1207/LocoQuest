@@ -6,7 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.Switch
+import com.google.android.material.switchmaterial.SwitchMaterial
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -43,9 +43,9 @@ class Settings : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         // Get references to the switches and button in the layout
-        val notificationToggle = view.findViewById<Switch>(R.id.notificationToggle)
-        val preciseLocationToggle = view.findViewById<Switch>(R.id.preciseLocationToggle)
-        val approximateLocationToggle = view.findViewById<Switch>(R.id.approximateLocationToggle)
+        val notificationToggle = view.findViewById<SwitchMaterial>(R.id.notificationToggle)
+        val preciseLocationToggle = view.findViewById<SwitchMaterial>(R.id.preciseLocationToggle)
+        val approximateLocationToggle = view.findViewById<SwitchMaterial>(R.id.approximateLocationToggle)
         val requestPermissionsButton = view.findViewById<Button>(R.id.requestPermissionsButton)
 
         // Set an event listener for the notification toggle switch
