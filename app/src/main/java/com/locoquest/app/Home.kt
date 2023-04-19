@@ -43,11 +43,12 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
     private var markers: ArrayList<Marker> = ArrayList()
     private val hue = 200f
     private var loadingMarkers = false
-    private var updateCamera = true
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private var cameraMovedByUser = false
+    private var updateCameraOnLocationUpdate = true
     private var mapFragment: SupportMapFragment? = null
     private var markerToBenchmark: HashMap<Marker, Benchmark> = HashMap()
     private var benchmarkToMarker: HashMap<Benchmark, Marker> = HashMap()
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,9 +69,17 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
             updateCameraWithLastLocation()
             startLocationUpdates()
 
-            map.setOnCameraMoveStartedListener { updateCamera = false }
-            map.setOnCameraMoveListener{ loadMarkers() }
+            map.setOnCameraMoveListener { loadMarkers() }
+            map.setOnCameraMoveStartedListener{
+                updateCameraOnLocationUpdate = !cameraMovedByUser
+                cameraMovedByUser = true
+            }
             map.setOnMarkerClickListener(this)
+            map.setOnMyLocationButtonClickListener {
+                cameraMovedByUser = false
+                updateCameraOnLocationUpdate = true
+                false
+            }
 
             loadMarkers()
         }
@@ -189,6 +198,8 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
     private fun goToSelectedBenchmark() {
         if (selectedBenchmark == null) return
 
+        updateCameraOnLocationUpdate = false
+        cameraMovedByUser = true
         googleMap?.moveCamera(
             CameraUpdateFactory.newLatLngZoom(
                 LatLng(
@@ -245,10 +256,7 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
             }
             // Request location updates using fusedLocationClient
             fusedLocationClient.requestLocationUpdates(createLocationRequest(), locationCallback, Looper.getMainLooper())
-            googleMap?.let {
-                it.isMyLocationEnabled = true
-                it.setOnMyLocationButtonClickListener { updateCamera = true; false }
-            }
+            googleMap?.let { it.isMyLocationEnabled = true }
         } else {
             Toast.makeText(
                 context,
@@ -285,6 +293,7 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
 
     private fun updateCameraWithLastLocation(){
         if(lastLocation == null || googleMap == null) return
+        cameraMovedByUser = false
         googleMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(
             LatLng(lastLocation!!.latitude, lastLocation!!.longitude), 15f
         ))
@@ -294,9 +303,8 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
         override fun onLocationResult(locationResult: LocationResult) {
             locationResult.lastLocation.let { location ->
                 lastLocation = location
-                if (!updateCamera) return
+                if (!updateCameraOnLocationUpdate) return
                 updateCameraWithLastLocation()
-                loadMarkers()
             }
         }
     }
