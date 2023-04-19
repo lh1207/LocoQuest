@@ -65,7 +65,7 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
 
         mapFragment?.getMapAsync { map ->
             googleMap = map
-
+            map.moveCamera(CameraUpdateFactory.zoomTo(15f))
             map.setOnCameraMoveListener {
                 loadMarkers()
             }
@@ -301,8 +301,8 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
     private fun updateCameraWithLastLocation(){
         if(lastLocation == null || googleMap == null) return
         cameraMovedByUser = false
-        googleMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(
-            LatLng(lastLocation!!.latitude, lastLocation!!.longitude), 15f
+        googleMap?.animateCamera(CameraUpdateFactory.newLatLng(
+            LatLng(lastLocation!!.latitude, lastLocation!!.longitude)
         ))
     }
 
