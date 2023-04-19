@@ -8,6 +8,6 @@ import com.google.android.gms.maps.model.LatLng
 data class User(
     @PrimaryKey
     val uid: String,
-    val displayName: String,
+    val displayName: String?,
     val benchmarks: ArrayList<LatLng>
 )

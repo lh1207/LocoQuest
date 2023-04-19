@@ -58,6 +58,7 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.locoquest.app.dao.BenchmarkDatabase
 import com.locoquest.app.databinding.ActivityMainBinding
+import com.locoquest.app.dto.User
 import kotlinx.coroutines.launch
 
 
@@ -118,11 +119,16 @@ class MainActivity : AppCompatActivity() {
             .build()
 
         Thread{
-            AppModule.db = Room.databaseBuilder(this, BenchmarkDatabase::class.java, "db").build()
-            val id = if (auth.currentUser == null) AppModule.user.uid else auth.currentUser!!.uid
+            AppModule.db = Room.databaseBuilder(this, BenchmarkDatabase::class.java, "db")
+                .fallbackToDestructiveMigration().build()
+            if (auth.currentUser != null)
+                AppModule.user = User(auth.currentUser!!.uid, auth.currentUser!!.displayName, ArrayList())
+
             val userDao = AppModule.db!!.localUserDAO()
-            val tmpUser = userDao.getUser(id)
-            if(tmpUser == null) userDao.insert(AppModule.user)
+            val tmpUser = userDao.getUser(AppModule.user.uid)
+            if(tmpUser == null) {
+                userDao.insert(AppModule.user)
+            }else AppModule.user = tmpUser
         }.start()
     }
 
