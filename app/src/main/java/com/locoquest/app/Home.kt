@@ -97,6 +97,7 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
         super.onResume()
         mapFragment?.onResume()
         startLocationUpdates()
+        cameraIsMoving = false
     }
 
     override fun onPause() {
@@ -160,8 +161,9 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
         return feet <= 500.0
     }
 
-    fun loadMarkers(){
-        if(loadingMarkers || googleMap == null) return
+    fun loadMarkers(){loadMarkers(false)}
+    fun loadMarkers(isUserSwitched: Boolean){
+        if((loadingMarkers && !isUserSwitched)|| googleMap == null) return
         loadingMarkers = true
         val map = googleMap!!
         val benchmarkService: IBenchmarkService = BenchmarkService()
@@ -173,7 +175,7 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
                     try {
                         val benchmarkList = benchmarkService.getBenchmarks(bounds)
                         if (benchmarkList != null) {
-                            if (benchmarkList.isEmpty() || isSameBenchmarks(benchmarkList)) {
+                            if (benchmarkList.isEmpty() || (isSameBenchmarks(benchmarkList) && !isUserSwitched)) {
                                 loadingMarkers = false
                                 return@Thread
                             }

@@ -274,7 +274,10 @@ class MainActivity : AppCompatActivity() {
                 if(tmpUser == null) {
                     userDao.insert(user)
                 }else user = tmpUser
-                Handler(Looper.getMainLooper()).post{home.loadMarkers()}
+                Handler(Looper.getMainLooper()).post{
+                    supportActionBar?.title = user.displayName
+                    home.loadMarkers(true)
+                }
                 switching = false
             }.start()
     }
