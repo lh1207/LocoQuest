@@ -1,4 +1,5 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -7,7 +8,7 @@
         android:id="@+id/titleTextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Settings"
+        android:text="@string/settings_text"
         android:textSize="24sp"
         android:textStyle="bold"
         android:padding="16dp" />
@@ -25,19 +26,20 @@
         android:id="@+id/notificationToggle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Notifications"
+        android:text="@string/notifications"
         android:padding="16dp"
         android:layout_below="@id/divider"
         android:layout_alignParentStart="true"
         android:layout_alignParentEnd="true"
-        android:layout_marginTop="16dp" />
+        android:layout_marginTop="16dp"
+        tools:ignore="UseSwitchCompatOrMaterialXml,VisualLintButtonSize" />
 
     <!-- GPS Settings -->
     <TextView
         android:id="@+id/gpsSettingsTextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="GPS Settings"
+        android:text="@string/gps_settings"
         android:textStyle="bold"
         android:padding="16dp"
         android:layout_below="@id/notificationToggle"
@@ -50,34 +52,37 @@
         android:id="@+id/preciseLocationToggle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Precise Location"
+        android:text="@string/precise_location"
         android:padding="16dp"
         android:layout_below="@id/gpsSettingsTextView"
         android:layout_alignParentStart="true"
         android:layout_alignParentEnd="true"
-        android:layout_marginTop="16dp" />
+        android:layout_marginTop="16dp"
+        tools:ignore="UseSwitchCompatOrMaterialXml,VisualLintButtonSize" />
 
     <!-- Approximate Location Toggle -->
     <Switch
         android:id="@+id/approximateLocationToggle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Approximate Location"
+        android:text="@string/approximate_location"
         android:padding="16dp"
         android:layout_below="@id/preciseLocationToggle"
         android:layout_alignParentStart="true"
         android:layout_alignParentEnd="true"
-        android:layout_marginTop="16dp" />
+        android:layout_marginTop="16dp"
+        tools:ignore="UseSwitchCompatOrMaterialXml,VisualLintButtonSize" />
 
     <!-- Request Permissions Button -->
     <Button
         android:id="@+id/requestPermissionsButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Request Permissions"
+        android:text="@string/request_permissions"
         android:layout_below="@id/approximateLocationToggle"
         android:layout_margin="16dp"
         android:layout_alignParentStart="true"
-        android:layout_alignParentEnd="true" />
+        android:layout_alignParentEnd="true"
+        tools:ignore="VisualLintButtonSize" />
 
 </RelativeLayout>
