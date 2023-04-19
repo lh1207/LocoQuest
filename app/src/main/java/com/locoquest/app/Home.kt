@@ -32,6 +32,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.locoquest.app.AppModule.Companion.user
+import com.locoquest.app.Converters.Companion.toMarkerOptions
 import com.locoquest.app.dto.Benchmark
 import kotlinx.coroutines.launch
 
@@ -45,7 +46,9 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
     private var updateCamera = true
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var mapFragment: SupportMapFragment? = null
-    private var markerToBenchmark: HashMap<LatLng, Benchmark> = HashMap()
+    private var markerToBenchmark: HashMap<Marker, Benchmark> = HashMap()
+    private var benchmarkToMarker: HashMap<Benchmark, Marker> = HashMap()
+    private val benchmarkMileRadius = 1.0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -101,26 +104,24 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
         var inProximity = false
         if(lastLocation != null) {
             inProximity = isWithin500Feet(
-                marker.position.latitude,
-                marker.position.longitude,
-                lastLocation!!.latitude,
-                lastLocation!!.longitude
+                marker.position,
+                LatLng(lastLocation!!.latitude, lastLocation!!.longitude)
             )
         }
 
-        //inProximity = true // for testing
+        inProximity = true // for testing
 
-        if(!markerToBenchmark.contains(marker.position)) return true
+        if(!markerToBenchmark.contains(marker)) return true
 
-        val benchmark = markerToBenchmark[marker.position]
+        val benchmark = markerToBenchmark[marker]
         if(!user.benchmarks.contains(benchmark?.pid)) {
             if(inProximity) {
                 user.benchmarks[benchmark!!.pid] = benchmark
                 Thread{AppModule.db?.localUserDAO()?.insert(user)}.start()
                 marker.setIcon(BitmapDescriptorFactory.defaultMarker(hue))
-                Toast.makeText(context, "Benchmark saved", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Benchmark completed", Toast.LENGTH_SHORT).show()
             }else{
-                Toast.makeText(context, "Not close enough to save", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Not close enough to complete", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -130,12 +131,12 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
         return false
     }
 
-    private fun isWithin500Feet(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Boolean {
+    private fun isWithin500Feet(latlng1: LatLng, latlng2: LatLng): Boolean {
         val R = 6371e3 // Earth's radius in meters
-        val φ1 = Math.toRadians(lat1)
-        val φ2 = Math.toRadians(lat2)
-        val Δφ = Math.toRadians(lat2 - lat1)
-        val Δλ = Math.toRadians(lon2 - lon1)
+        val φ1 = Math.toRadians(latlng1.latitude)
+        val φ2 = Math.toRadians(latlng2.latitude)
+        val Δφ = Math.toRadians(latlng2.latitude - latlng1.latitude)
+        val Δλ = Math.toRadians(latlng2.longitude - latlng1.longitude)
 
         val a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
                 Math.cos(φ1) * Math.cos(φ2) *
@@ -160,46 +161,19 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
             try {
                 val target = map.cameraPosition.target
                 Thread {
-                    val benchmarkList = benchmarkService.getBenchmarks(target, 10.0)
+                    val benchmarkList = benchmarkService.getBenchmarks(target, benchmarkMileRadius)
                     if (benchmarkList != null) {
                         if(benchmarkList.isEmpty()){
                             loadingMarkers = false
                             return@Thread
                         }
                         markerToBenchmark.clear()
+                        benchmarkToMarker.clear()
                         benchmarks = ArrayList(benchmarkList)
 
-                        benchmarkList.forEach { benchmark ->
-                            var marker = MarkerOptions()
-                                .position(
-                                    LatLng(
-                                        benchmark.lat.toDouble(),
-                                        benchmark.lon.toDouble()
-                                    )
-                                )
-                                .title(benchmark.name)
-                                .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHt}")
-
-                            markerToBenchmark[marker.position] = benchmark
-
-                            if(user.benchmarks.contains(benchmark.pid))
-                                marker = marker.icon(BitmapDescriptorFactory.defaultMarker(hue))
-
-                            Handler(Looper.getMainLooper()).post { map.addMarker(marker)?.let { markers.add(it) } }
-                        }
-
-                        if(selectedBenchmark != null) {
-                            Handler(Looper.getMainLooper()).post {
-                                map.moveCamera(
-                                    CameraUpdateFactory.newLatLngZoom(
-                                        LatLng(
-                                            selectedBenchmark?.lat?.toDouble()!!,
-                                            selectedBenchmark?.lon?.toDouble()!!
-                                        ), 15f
-                                    )
-                                )
-                                selectedBenchmark = null
-                            }
+                        Handler(Looper.getMainLooper()).post {
+                            benchmarkList.forEach { addBenchmarkToMap(it) }
+                            goToSelectedBenchmark()
                         }
                     } else {
                         println("Error: unable to retrieve benchmark data")
@@ -210,6 +184,40 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
             }
         }
         loadingMarkers = false
+    }
+
+    private fun goToSelectedBenchmark() {
+        if (selectedBenchmark == null) return
+
+        googleMap?.moveCamera(
+            CameraUpdateFactory.newLatLngZoom(
+                LatLng(
+                    selectedBenchmark?.lat?.toDouble()!!,
+                    selectedBenchmark?.lon?.toDouble()!!
+                ), 15f
+            )
+        )
+
+        val selectedMarker =
+            if (benchmarkToMarker.contains(selectedBenchmark))
+                benchmarkToMarker[selectedBenchmark]
+            else addBenchmarkToMap(selectedBenchmark!!)
+
+        selectedMarker?.showInfoWindow()
+
+        selectedBenchmark = null
+    }
+
+    private fun addBenchmarkToMap(benchmark: Benchmark) : Marker? {
+        var options = toMarkerOptions(benchmark)
+        if(user.benchmarks.contains(benchmark.pid))
+            options = options.icon(BitmapDescriptorFactory.defaultMarker(hue))
+        val marker = googleMap!!.addMarker(options)
+        return if(marker?.let { markers.add(it) } == true) {
+            markerToBenchmark[marker] = benchmark
+            benchmarkToMarker[benchmark] = marker
+            marker
+        } else null
     }
 
     fun startLocationUpdates() {
