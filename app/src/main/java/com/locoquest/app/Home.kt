@@ -116,16 +116,11 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
     }
 
     override fun onMarkerClick(marker: Marker): Boolean {
-        var inProximity = false
         val lastLocation = lastLocation()
-        if(lastLocation != null) {
-            inProximity = isWithin500Feet(
-                marker.position,
-                LatLng(lastLocation.latitude, lastLocation.longitude)
-            )
-        }
-
-        //inProximity = true // for testing
+        val inProximity = isWithin500Feet(
+            marker.position,
+            LatLng(lastLocation.latitude, lastLocation.longitude)
+        )
 
         if(!markerToBenchmark.contains(marker)) return true
 
