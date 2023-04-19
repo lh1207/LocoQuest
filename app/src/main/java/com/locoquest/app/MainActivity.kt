@@ -35,6 +35,7 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.locoquest.app.AppModule.Companion.db
+import com.locoquest.app.AppModule.Companion.guest
 import com.locoquest.app.AppModule.Companion.user
 import com.locoquest.app.dao.BenchmarkDatabase
 import com.locoquest.app.dto.User
@@ -55,12 +56,6 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         signInButton = findViewById(R.id.google_sign_in_button)
-
-        fun loadFragment(fragment: Fragment) {
-            val transaction = supportFragmentManager.beginTransaction()
-            transaction.replace(R.id.container,fragment)
-            transaction.commit()
-        }
 
         home = Home()
         loadFragment(home)
@@ -265,23 +260,29 @@ class MainActivity : AppCompatActivity() {
             menu.findItem(R.id.menu_item_account).icon =
                 ContextCompat.getDrawable(this, R.drawable.account)
 
-            user = User("0", "", HashMap())
+            user = guest
             switchUser()
         }
     }
 
     private fun switchUser(){
         if(!switching)
-        Thread{
-            switching = true
-            val userDao = db!!.localUserDAO()
-            val tmpUser = userDao.getUser(user.uid)
-            if(tmpUser == null) {
-                userDao.insert(user)
-            }else user = tmpUser
-            Handler(Looper.getMainLooper()).post{home.loadMarkers()}
-            switching = false
-        }.start()
+            Thread{
+                switching = true
+                val userDao = db!!.localUserDAO()
+                val tmpUser = userDao.getUser(user.uid)
+                if(tmpUser == null) {
+                    userDao.insert(user)
+                }else user = tmpUser
+                Handler(Looper.getMainLooper()).post{home.loadMarkers()}
+                switching = false
+            }.start()
+    }
+
+    private fun loadFragment(fragment: Fragment) {
+        val transaction = supportFragmentManager.beginTransaction()
+        transaction.replace(R.id.container,fragment)
+        transaction.commit()
     }
 
     companion object {

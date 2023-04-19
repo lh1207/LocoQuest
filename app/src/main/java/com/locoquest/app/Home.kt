@@ -168,6 +168,7 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
                         }
                         markerToBenchmark.clear()
                         benchmarks = ArrayList(benchmarkList)
+
                         benchmarkList.forEach { benchmark ->
                             var marker = MarkerOptions()
                                 .position(
@@ -186,7 +187,20 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
 
                             Handler(Looper.getMainLooper()).post { map.addMarker(marker)?.let { markers.add(it) } }
                         }
-                        Handler(Looper.getMainLooper()).post { Toast.makeText(context, "markers loaded", Toast.LENGTH_SHORT).show() }
+
+                        if(selectedBenchmark != null) {
+                            Handler(Looper.getMainLooper()).post {
+                                map.moveCamera(
+                                    CameraUpdateFactory.newLatLngZoom(
+                                        LatLng(
+                                            selectedBenchmark?.lat?.toDouble()!!,
+                                            selectedBenchmark?.lon?.toDouble()!!
+                                        ), 15f
+                                    )
+                                )
+                                selectedBenchmark = null
+                            }
+                        }
                     } else {
                         println("Error: unable to retrieve benchmark data")
                     }
@@ -281,5 +295,6 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
 
     companion object{
         var lastLocation: Location? = null
+        var selectedBenchmark: Benchmark? = null
     }
 }

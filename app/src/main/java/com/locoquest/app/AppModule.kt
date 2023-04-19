@@ -6,6 +6,7 @@ import com.locoquest.app.dto.User
 class AppModule {
     companion object{
         var db: BenchmarkDatabase? = null
-        var user: User = User("0", "", HashMap())
+        val guest: User = User("0", "Guest", HashMap())
+        var user: User = guest
     }
 }
