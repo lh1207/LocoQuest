@@ -22,7 +22,7 @@
         android:layout_below="@id/titleTextView" />
 
     <!-- Notification Toggle -->
-    <Switch
+    <com.google.android.material.switchmaterial.SwitchMaterial
         android:id="@+id/notificationToggle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -32,10 +32,11 @@
         android:layout_alignParentStart="true"
         android:layout_alignParentEnd="true"
         android:layout_marginTop="16dp"
+        android:checked="false"
         tools:ignore="UseSwitchCompatOrMaterialXml,VisualLintButtonSize" />
 
     <!-- Precise Location Toggle -->
-    <Switch
+    <com.google.android.material.switchmaterial.SwitchMaterial
         android:id="@+id/preciseLocationToggle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -45,10 +46,11 @@
         android:layout_alignParentStart="true"
         android:layout_alignParentEnd="true"
         android:layout_marginTop="16dp"
+        android:checked="false"
         tools:ignore="UseSwitchCompatOrMaterialXml,VisualLintButtonSize" />
 
     <!-- Approximate Location Toggle -->
-    <Switch
+    <com.google.android.material.switchmaterial.SwitchMaterial
         android:id="@+id/approximateLocationToggle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -58,6 +60,7 @@
         android:layout_alignParentStart="true"
         android:layout_alignParentEnd="true"
         android:layout_marginTop="16dp"
+        android:checked="false"
         tools:ignore="UseSwitchCompatOrMaterialXml,VisualLintButtonSize" />
 
     <!-- Request Permissions Button -->

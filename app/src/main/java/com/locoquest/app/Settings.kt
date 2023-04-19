@@ -1,6 +1,11 @@
 package com.locoquest.app
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -49,8 +54,30 @@ class Settings : Fragment() {
         val requestPermissionsButton = view.findViewById<Button>(R.id.requestPermissionsButton)
 
         // Set an event listener for the notification toggle switch
-        notificationToggle.setOnCheckedChangeListener { _, _ ->
-            // Do something when the toggle is checked or unchecked
+        notificationToggle.setOnCheckedChangeListener { _, isChecked ->
+            // Get the NotificationManager system service
+            val notificationManager = requireContext().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+            // Check if the notification toggle switch is checked
+            if (isChecked) {
+                // If the notification toggle switch is checked, enable notifications
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        // For Android 8.0 and above, create a channel for notifications
+                        val channel = NotificationChannel("channel_id", "channel_name", NotificationManager.IMPORTANCE_DEFAULT)
+                        notificationManager.createNotificationChannel(channel)
+                    }
+                } catch (e: Exception) {
+                    Log.e("Notification", "Error creating notification channel: ${e.message}")
+                }
+
+                // Enable notifications in the app
+                notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
+            } else {
+                // If the notification toggle switch is unchecked, disable notifications
+                // Disable notifications in the app
+                notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_NONE)
+            }
         }
 
         // Set an event listener for the precise location toggle switch
