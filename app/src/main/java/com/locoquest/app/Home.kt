@@ -3,6 +3,8 @@ package com.locoquest.app
 import BenchmarkService
 import IBenchmarkService
 import android.Manifest
+import android.content.Context
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.location.Location
 import android.net.ConnectivityManager
@@ -27,6 +29,7 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.GoogleMap.CancelableCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
@@ -42,8 +45,9 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
     private var googleMap: GoogleMap? = null
     private var markers: ArrayList<Marker> = ArrayList()
     private val hue = 200f
+    private var cameraIsMoving = false
+    private val cameraAnimationDuration = 2000
     private val defaultCameraZoom = 15f
-    private var firstCameraMove = true
     private var loadingMarkers = false
     private var cameraMovedByUser = false
     private var updateCameraOnLocationUpdate = true
@@ -76,9 +80,10 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
             }
             map.setOnMarkerClickListener(this)
             map.setOnMyLocationButtonClickListener {
+                updateCameraWithLastLocation()
                 cameraMovedByUser = false
                 updateCameraOnLocationUpdate = true
-                false
+                true
             }
 
             updateCameraWithLastLocation()
@@ -112,10 +117,11 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
 
     override fun onMarkerClick(marker: Marker): Boolean {
         var inProximity = false
+        val lastLocation = lastLocation()
         if(lastLocation != null) {
             inProximity = isWithin500Feet(
                 marker.position,
-                LatLng(lastLocation!!.latitude, lastLocation!!.longitude)
+                LatLng(lastLocation.latitude, lastLocation.longitude)
             )
         }
 
@@ -299,33 +305,51 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
             .setFastestInterval(1000) // Update location at least every 1 second
     }
 
-    private fun updateCameraWithLastLocation(){
-        if(lastLocation == null || googleMap == null) return
+    private fun updateCameraWithLastLocation() {
+        val lastLocation = lastLocation()
+        if (lastLocation.provider == "" || googleMap == null || cameraIsMoving) return
         cameraMovedByUser = false
-        if(firstCameraMove) {
-            firstCameraMove = false
-            googleMap?.animateCamera(
-                CameraUpdateFactory.newLatLngZoom(
-                    LatLng(lastLocation!!.latitude, lastLocation!!.longitude), defaultCameraZoom
-                )
-            )
-        } else googleMap?.animateCamera(CameraUpdateFactory.newLatLng(
-            LatLng(lastLocation!!.latitude, lastLocation!!.longitude)
-        ))
+        cameraIsMoving = true
+        googleMap?.animateCamera(
+            CameraUpdateFactory.newLatLngZoom(
+                LatLng(lastLocation.latitude, lastLocation.longitude), defaultCameraZoom
+            ), cameraAnimationDuration, object : CancelableCallback {
+                override fun onFinish() { cameraIsMoving = false }
+                override fun onCancel() { cameraIsMoving = false }
+            })
     }
 
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
             locationResult.lastLocation.let { location ->
-                lastLocation = location
+                lastLocation(location)
                 if (!updateCameraOnLocationUpdate) return
                 updateCameraWithLastLocation()
             }
         }
     }
 
+    private fun prefs(): SharedPreferences {
+        return requireContext().getSharedPreferences("LocoQuest", Context.MODE_PRIVATE)
+    }
+
+    private fun lastLocation(location: Location){
+        with (prefs().edit()) {
+            putFloat("lat", location.latitude.toFloat())
+            putFloat("lon", location.longitude.toFloat())
+            putString("provider", location.provider)
+            apply()
+        }
+    }
+
+    private fun lastLocation() : Location {
+        val location = Location(prefs().getString("provider", ""))
+        location.latitude = prefs().getFloat("lat", 0f).toDouble()
+        location.longitude = prefs().getFloat("lon", 0f).toDouble()
+        return location
+    }
+
     companion object{
-        var lastLocation: Location? = null
         var selectedBenchmark: Benchmark? = null
     }
 }
