@@ -59,7 +59,7 @@ class BenchmarkServiceTest {
     }
 
     private class MockBenchmarkService : BenchmarkService() {
-        override fun parseBenchmarkData(jsonData: String): Benchmark {
+        fun parseBenchmarkData(jsonData: String): Benchmark {
             return Benchmark(
                 pid = "ABC123",
                 name = "Mount Everest",
