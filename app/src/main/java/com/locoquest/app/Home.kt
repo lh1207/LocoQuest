@@ -148,7 +148,7 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
         return feet <= 500.0
     }
 
-    private fun loadMarkers(){
+    fun loadMarkers(){
         if(loadingMarkers || googleMap == null) return
         loadingMarkers = true
         val map = googleMap!!
