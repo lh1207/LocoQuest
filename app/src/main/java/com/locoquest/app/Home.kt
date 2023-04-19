@@ -39,7 +39,6 @@ import com.locoquest.app.Converters.Companion.toMarkerOptions
 import com.locoquest.app.dto.Benchmark
 import kotlinx.coroutines.launch
 
-
 class Home : Fragment(), GoogleMap.OnMarkerClickListener {
 
     private var googleMap: GoogleMap? = null
@@ -71,6 +70,8 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
 
         mapFragment?.getMapAsync { map ->
             googleMap = map
+            startLocationUpdates()
+
             map.setOnCameraMoveListener {
                 loadMarkers()
             }
@@ -87,7 +88,6 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
             }
 
             updateCameraWithLastLocation()
-            startLocationUpdates()
         }
 
         return view
@@ -188,8 +188,8 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
 
                             Handler(Looper.getMainLooper()).post {
                                 map.clear()
-                                benchmarkList.forEach { addBenchmarkToMap(it) }
                                 goToSelectedBenchmark()
+                                benchmarkList.forEach { addBenchmarkToMap(it) }
                             }
                         } else {
                             println("Error: unable to retrieve benchmark data")
@@ -314,7 +314,10 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
             CameraUpdateFactory.newLatLngZoom(
                 LatLng(lastLocation.latitude, lastLocation.longitude), defaultCameraZoom
             ), cameraAnimationDuration, object : CancelableCallback {
-                override fun onFinish() { cameraIsMoving = false }
+                override fun onFinish() {
+                    loadMarkers()
+                    cameraIsMoving = false
+                }
                 override fun onCancel() { cameraIsMoving = false }
             })
     }

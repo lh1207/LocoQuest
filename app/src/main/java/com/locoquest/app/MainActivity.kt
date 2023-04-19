@@ -96,7 +96,7 @@ class MainActivity : AppCompatActivity() {
             db = Room.databaseBuilder(this, BenchmarkDatabase::class.java, "db")
                 .fallbackToDestructiveMigration().build()
             if (auth.currentUser != null)
-                user = User(auth.currentUser!!.uid, auth.currentUser!!.displayName, HashMap())
+                user = User(auth.currentUser!!.uid)
             switchUser()
         }.start()
     }
@@ -133,7 +133,7 @@ class MainActivity : AppCompatActivity() {
                         auth.signInWithCredential(firebaseCredential)
                             .addOnCompleteListener(this) { task ->
                                 if (task.isSuccessful) {
-                                    user = User(auth.currentUser!!.uid, auth.currentUser!!.displayName, HashMap())
+                                    user = User(auth.currentUser!!.uid, auth.currentUser!!.displayName!!, HashMap())
                                     switchUser()
                                     displayUserInfo()
                                     Log.d(TAG, "signInWithCredential:success")
@@ -230,7 +230,7 @@ class MainActivity : AppCompatActivity() {
     private fun displayUserInfo() {
         auth.currentUser?.let { user ->
             supportActionBar?.let {
-                it.title = user.displayName
+                it.title = if(AppModule.user.displayName == "") user.displayName else AppModule.user.displayName
 
                 Glide.with(this)
                     .load(user.photoUrl)
