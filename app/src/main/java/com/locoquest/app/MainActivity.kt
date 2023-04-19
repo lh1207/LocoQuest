@@ -117,9 +117,13 @@ class MainActivity : AppCompatActivity() {
             )
             .build()
 
-        /*Thread{
-            Room.databaseBuilder(this, BenchmarkDatabase::class.java, "db").build()
-        }.start()*/
+        Thread{
+            AppModule.db = Room.databaseBuilder(this, BenchmarkDatabase::class.java, "db").build()
+            val id = if (auth.currentUser == null) AppModule.user.uid else auth.currentUser!!.uid
+            val userDao = AppModule.db!!.localUserDAO()
+            val tmpUser = userDao.getUser(id)
+            if(tmpUser == null) userDao.insert(AppModule.user)
+        }.start()
     }
 
     /**

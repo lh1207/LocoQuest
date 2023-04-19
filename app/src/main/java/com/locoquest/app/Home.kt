@@ -3,7 +3,6 @@ package com.locoquest.app
 import BenchmarkService
 import IBenchmarkService
 import android.Manifest
-import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
 import android.net.ConnectivityManager
@@ -32,22 +31,19 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import com.locoquest.app.AppModule.Companion.user
 import com.locoquest.app.dto.Benchmark
-import com.locoquest.app.dto.User
 import kotlinx.coroutines.launch
-import kotlin.system.exitProcess
 
 class Home : Fragment(), GoogleMap.OnMarkerClickListener {
 
-    private lateinit var googleMap: GoogleMap
+    private var googleMap: GoogleMap? = null
     private var benchmarks: ArrayList<Benchmark> = ArrayList()
     private var markers: ArrayList<Marker> = ArrayList()
-    private var user: User = User("", "", ArrayList())
     private val hue = 200f
     private var loadingMarkers = false
     private var updateCamera = true
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private lateinit var lastLocation: Location
     private var mapFragment: SupportMapFragment? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,24 +62,8 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
         mapFragment?.getMapAsync { map ->
             googleMap = map
 
-            // Check network connectivity and start location updates accordingly
-            val connectivityManager =
-                getSystemService(requireContext(), ConnectivityManager::class.java) as ConnectivityManager
-            val network = connectivityManager.activeNetwork
-            val capabilities = connectivityManager.getNetworkCapabilities(network)
-
-            if (capabilities != null && (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || capabilities.hasTransport(
-                    NetworkCapabilities.TRANSPORT_CELLULAR
-                ))
-            ) {
-                startLocationUpdates()
-            } else {
-                Toast.makeText(
-                    context,
-                    "Unable to start location updates. Device is offline.",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
+            updateCameraWithLastLocation()
+            startLocationUpdates()
 
             map.setOnCameraMoveStartedListener { updateCamera = false }
             map.setOnMarkerClickListener(this)
@@ -97,6 +77,7 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
     override fun onResume() {
         super.onResume()
         mapFragment?.onResume()
+        startLocationUpdates()
     }
 
     override fun onPause() {
@@ -117,11 +98,13 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
 
     override fun onMarkerClick(marker: Marker): Boolean {
         var inProximity = false
-        lastLocation.let {
-            inProximity = isWithin500Feet(marker.position.latitude,
+        if(lastLocation != null) {
+            inProximity = isWithin500Feet(
+                marker.position.latitude,
                 marker.position.longitude,
-                lastLocation.latitude,
-                lastLocation.longitude)
+                lastLocation!!.latitude,
+                lastLocation!!.longitude
+            )
         }
 
         inProximity = true // for testing
@@ -162,15 +145,16 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
     }
 
     private fun loadMarkers(){
-        if(loadingMarkers) return
+        if(loadingMarkers || googleMap == null) return
         loadingMarkers = true
-        googleMap.clear()
+        val map = googleMap!!
+        map.clear()
 
         val benchmarkService: IBenchmarkService = BenchmarkService()
 
         lifecycleScope.launch {
             try {
-                val target = googleMap.cameraPosition.target
+                val target = map.cameraPosition.target
                 Thread {
                     val benchmarkList = benchmarkService.getBenchmarks(target, 10.0)
                     if (benchmarkList != null) {
@@ -193,7 +177,7 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
                             if(user.benchmarks.contains(LatLng(benchmark.lat.toDouble(), benchmark.lon.toDouble())))
                                 marker = marker.icon(BitmapDescriptorFactory.defaultMarker(hue))
 
-                            Handler(Looper.getMainLooper()).post { googleMap.addMarker(marker)?.let { markers.add(it) } }
+                            Handler(Looper.getMainLooper()).post { map.addMarker(marker)?.let { markers.add(it) } }
                         }
                         Handler(Looper.getMainLooper()).post { Toast.makeText(context, "markers loaded", Toast.LENGTH_SHORT).show() }
                     } else {
@@ -208,23 +192,41 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
     }
 
     fun startLocationUpdates() {
-        // Check if location permissions are granted
-        if (ActivityCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
+        // Check network connectivity and start location updates accordingly
+        val connectivityManager =
+            getSystemService(requireContext(), ConnectivityManager::class.java) as ConnectivityManager
+        val network = connectivityManager.activeNetwork
+        val capabilities = connectivityManager.getNetworkCapabilities(network)
+
+        if (capabilities != null && (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || capabilities.hasTransport(
+                NetworkCapabilities.TRANSPORT_CELLULAR
+            ))
         ) {
-            // Request location permissions if not granted
-            requestLocationPermission()
-            return
+            if (ActivityCompat.checkSelfPermission(
+                    requireContext(),
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                    requireContext(),
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                // Request location permissions if not granted
+                requestLocationPermission()
+                return
+            }
+            // Request location updates using fusedLocationClient
+            fusedLocationClient.requestLocationUpdates(createLocationRequest(), locationCallback, Looper.getMainLooper())
+            googleMap?.let {
+                it.isMyLocationEnabled = true
+                it.setOnMyLocationButtonClickListener { updateCamera = true; false }
+            }
+        } else {
+            Toast.makeText(
+                context,
+                "Unable to start location updates. Device is offline.",
+                Toast.LENGTH_SHORT
+            ).show()
         }
-        // Request location updates using fusedLocationClient
-        fusedLocationClient.requestLocationUpdates(createLocationRequest(), locationCallback, Looper.getMainLooper())
-        googleMap.isMyLocationEnabled = true
-        googleMap.setOnMyLocationButtonClickListener { updateCamera = true; false }
     }
 
     private fun stopLocationUpdates() {
@@ -252,19 +254,25 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
             .setFastestInterval(1000) // Update location at least every 1 second
     }
 
+    private fun updateCameraWithLastLocation(){
+        if(lastLocation == null || googleMap == null) return
+        googleMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(
+            LatLng(lastLocation!!.latitude, lastLocation!!.longitude), 15f
+        ))
+    }
+
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
             locationResult.lastLocation.let { location ->
                 lastLocation = location
                 if (!updateCamera) return
-                val latitude = location.latitude
-                val longitude = location.longitude
-                val cameraUpdate = CameraUpdateFactory.newLatLngZoom(
-                    LatLng(latitude, longitude), 15f
-                )
-                googleMap.moveCamera(cameraUpdate)
+                updateCameraWithLastLocation()
                 loadMarkers()
             }
         }
+    }
+
+    companion object{
+        var lastLocation: Location? = null
     }
 }
