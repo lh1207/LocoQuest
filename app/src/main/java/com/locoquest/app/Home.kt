@@ -42,6 +42,8 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
     private var googleMap: GoogleMap? = null
     private var markers: ArrayList<Marker> = ArrayList()
     private val hue = 200f
+    private val defaultCameraZoom = 15f
+    private var firstCameraMove = true
     private var loadingMarkers = false
     private var cameraMovedByUser = false
     private var updateCameraOnLocationUpdate = true
@@ -65,7 +67,6 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
 
         mapFragment?.getMapAsync { map ->
             googleMap = map
-            map.moveCamera(CameraUpdateFactory.zoomTo(15f))
             map.setOnCameraMoveListener {
                 loadMarkers()
             }
@@ -301,7 +302,14 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
     private fun updateCameraWithLastLocation(){
         if(lastLocation == null || googleMap == null) return
         cameraMovedByUser = false
-        googleMap?.animateCamera(CameraUpdateFactory.newLatLng(
+        if(firstCameraMove) {
+            firstCameraMove = false
+            googleMap?.animateCamera(
+                CameraUpdateFactory.newLatLngZoom(
+                    LatLng(lastLocation!!.latitude, lastLocation!!.longitude), defaultCameraZoom
+                )
+            )
+        } else googleMap?.animateCamera(CameraUpdateFactory.newLatLng(
             LatLng(lastLocation!!.latitude, lastLocation!!.longitude)
         ))
     }
