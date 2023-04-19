@@ -11,4 +11,14 @@
     <string name="settings">Settings</string>
     <string name="settings_fragment">Settings Fragment</string>
     <string name="map_fragment">Map Fragment</string>
+    <string name="lorem_ipsum">Lorem Ipsum</string>
+    <string name="settings_text">Settings</string>
+    <string name="notifications">Notifications</string>
+    <string name="gps_settings">GPS Settings</string>
+    <string name="precise_location">Precise Location</string>
+    <string name="approximate_location">Approximate Location</string>
+    <string name="request_permissions">Request Permissions</string>
+    <string name="profile_text">Profile</string>
+    <string name="todo">TODO</string>
+    <string name="edit_name">Edit Name</string>
 </resources>
