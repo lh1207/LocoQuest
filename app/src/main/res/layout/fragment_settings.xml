@@ -1,17 +1,75 @@
-<?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/purple_700"
-    tools:context=".Settings">
+    android:layout_height="match_parent">
 
-    <!-- TODO: Update blank fragment layout -->
+    <!-- Title -->
     <TextView
+        android:id="@+id/titleTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/settings_text"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:padding="16dp" />
+
+    <!-- Divider -->
+    <View
+        android:id="@+id/divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@android:color/darker_gray"
+        android:layout_below="@id/titleTextView" />
+
+    <!-- Notification Toggle -->
+    <Switch
+        android:id="@+id/notificationToggle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Settings Fragment"
-        android:textSize="26dp"
-        android:layout_gravity="center"/>
+        android:text="@string/notifications"
+        android:padding="16dp"
+        android:layout_below="@id/divider"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="16dp"
+        tools:ignore="UseSwitchCompatOrMaterialXml,VisualLintButtonSize" />
 
-</FrameLayout>
+    <!-- Precise Location Toggle -->
+    <Switch
+        android:id="@+id/preciseLocationToggle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/precise_location"
+        android:padding="16dp"
+        android:layout_below="@id/notificationToggle"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="16dp"
+        tools:ignore="UseSwitchCompatOrMaterialXml,VisualLintButtonSize" />
+
+    <!-- Approximate Location Toggle -->
+    <Switch
+        android:id="@+id/approximateLocationToggle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/approximate_location"
+        android:padding="16dp"
+        android:layout_below="@id/preciseLocationToggle"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="16dp"
+        tools:ignore="UseSwitchCompatOrMaterialXml,VisualLintButtonSize" />
+
+    <!-- Request Permissions Button -->
+    <Button
+        android:id="@+id/requestPermissionsButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/request_permissions"
+        android:layout_below="@id/approximateLocationToggle"
+        android:layout_margin="16dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true"
+        tools:ignore="VisualLintButtonSize" />
+
+</RelativeLayout>
