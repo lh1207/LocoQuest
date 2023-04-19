@@ -1,22 +1,58 @@
-<?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".MainActivity"
-    android:background="#547A56">
+    android:layout_height="match_parent">
 
-    <!-- TODO: Update blank fragment layout -->
+    <!-- Title -->
     <TextView
+        android:id="@+id/titleTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Profile"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:padding="16dp" />
+
+    <!-- Profile Picture (PFP) -->
+    <ImageView
+        android:id="@+id/profileImageView"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:src="@drawable/default_profile_picture"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/titleTextView"
+        android:layout_marginTop="24dp"
+        android:background="@drawable/profile_picture_background" />
+
+    <!-- Name TextView -->
+    <TextView
+        android:id="@+id/nameTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/profile_fragment"
-        android:textColor="#212121"
-        android:textSize="26sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        android:layout_below="@id/profileImageView"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="8dp"
+        android:text="@string/lorem_ipsum" />
+
+    <!-- Divider -->
+    <View
+        android:id="@+id/divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@android:color/darker_gray"
+        android:layout_below="@id/nameTextView"
+        android:layout_marginTop="24dp" />
+
+    <!-- Edit Name Button -->
+    <Button
+        android:id="@+id/editNameButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Edit Name"
+        android:layout_below="@id/divider"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="16dp" />
 
 </RelativeLayout>

@@ -1,22 +1,83 @@
-<?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".MainActivity"
-    android:background="#3C3F41">
+    android:layout_height="match_parent">
 
-    <!-- TODO: Update blank fragment layout -->
+    <!-- Title -->
     <TextView
+        android:id="@+id/titleTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Settings"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:padding="16dp" />
+
+    <!-- Divider -->
+    <View
+        android:id="@+id/divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@android:color/darker_gray"
+        android:layout_below="@id/titleTextView" />
+
+    <!-- Notification Toggle -->
+    <Switch
+        android:id="@+id/notificationToggle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/settings_fragment"
-        android:textColor="#0097A7"
-        android:textSize="26sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:text="Notifications"
+        android:padding="16dp"
+        android:layout_below="@id/divider"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="16dp" />
+
+    <!-- GPS Settings -->
+    <TextView
+        android:id="@+id/gpsSettingsTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="GPS Settings"
+        android:textStyle="bold"
+        android:padding="16dp"
+        android:layout_below="@id/notificationToggle"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="16dp" />
+
+    <!-- Precise Location Toggle -->
+    <Switch
+        android:id="@+id/preciseLocationToggle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Precise Location"
+        android:padding="16dp"
+        android:layout_below="@id/gpsSettingsTextView"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="16dp" />
+
+    <!-- Approximate Location Toggle -->
+    <Switch
+        android:id="@+id/approximateLocationToggle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Approximate Location"
+        android:padding="16dp"
+        android:layout_below="@id/preciseLocationToggle"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="16dp" />
+
+    <!-- Request Permissions Button -->
+    <Button
+        android:id="@+id/requestPermissionsButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Request Permissions"
+        android:layout_below="@id/approximateLocationToggle"
+        android:layout_margin="16dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true" />
 
 </RelativeLayout>
