@@ -16,6 +16,7 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.setPadding
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -64,6 +65,7 @@ class Profile : Fragment(), OnLongClickListener, OnClickListener {
 
             val input = EditText(context)
             input.inputType = InputType.TYPE_CLASS_TEXT
+            input.setPadding((16 * resources.displayMetrics.density).toInt())
             builder.setView(input)
 
             builder.setPositiveButton("OK") { _, _ ->
