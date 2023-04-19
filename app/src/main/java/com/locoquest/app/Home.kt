@@ -10,6 +10,7 @@ import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -39,7 +40,6 @@ import kotlinx.coroutines.launch
 class Home : Fragment(), GoogleMap.OnMarkerClickListener {
 
     private var googleMap: GoogleMap? = null
-    private var benchmarks: ArrayList<Benchmark> = ArrayList()
     private var markers: ArrayList<Marker> = ArrayList()
     private val hue = 200f
     private var loadingMarkers = false
@@ -66,10 +66,9 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
         mapFragment?.getMapAsync { map ->
             googleMap = map
 
-            updateCameraWithLastLocation()
-            startLocationUpdates()
-
-            map.setOnCameraMoveListener { loadMarkers() }
+            map.setOnCameraMoveListener {
+                loadMarkers()
+            }
             map.setOnCameraMoveStartedListener{
                 updateCameraOnLocationUpdate = !cameraMovedByUser
                 cameraMovedByUser = true
@@ -81,7 +80,8 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
                 false
             }
 
-            loadMarkers()
+            updateCameraWithLastLocation()
+            startLocationUpdates()
         }
 
         return view
@@ -162,37 +162,44 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
         if(loadingMarkers || googleMap == null) return
         loadingMarkers = true
         val map = googleMap!!
-        map.clear()
-
         val benchmarkService: IBenchmarkService = BenchmarkService()
 
         lifecycleScope.launch {
             try {
                 val bounds = map.projection.visibleRegion.latLngBounds
                 Thread {
-                    val benchmarkList = benchmarkService.getBenchmarks(bounds)
-                    if (benchmarkList != null) {
-                        if(benchmarkList.isEmpty()){
-                            loadingMarkers = false
-                            return@Thread
-                        }
-                        markerToBenchmark.clear()
-                        benchmarkToMarker.clear()
-                        benchmarks = ArrayList(benchmarkList)
+                    try {
+                        val benchmarkList = benchmarkService.getBenchmarks(bounds)
+                        if (benchmarkList != null) {
+                            if (benchmarkList.isEmpty() || isSameBenchmarks(benchmarkList)) {
+                                loadingMarkers = false
+                                return@Thread
+                            }
 
-                        Handler(Looper.getMainLooper()).post {
-                            benchmarkList.forEach { addBenchmarkToMap(it) }
-                            goToSelectedBenchmark()
+                            markerToBenchmark.clear()
+                            benchmarkToMarker.clear()
+
+                            Handler(Looper.getMainLooper()).post {
+                                map.clear()
+                                benchmarkList.forEach { addBenchmarkToMap(it) }
+                                goToSelectedBenchmark()
+                            }
+                        } else {
+                            println("Error: unable to retrieve benchmark data")
                         }
-                    } else {
-                        println("Error: unable to retrieve benchmark data")
+                    }catch (e: ConcurrentModificationException){
+                        Log.e("LoadMarkers", e.toString())
                     }
+                    loadingMarkers = false
                 }.start()
             } catch (e: Exception) {
                 println("Error: ${e.message}")
             }
         }
-        loadingMarkers = false
+    }
+
+    private fun isSameBenchmarks(benchmarkList: List<Benchmark>) : Boolean{
+        return benchmarkList.sortedBy { x -> x.pid } == ArrayList(markerToBenchmark.values.toList()).sortedBy { x -> x.pid }
     }
 
     private fun goToSelectedBenchmark() {

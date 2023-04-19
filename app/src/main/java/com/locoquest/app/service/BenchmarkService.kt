@@ -1,3 +1,4 @@
+import android.util.Log
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.locoquest.app.RetrofitClientInstance
@@ -12,18 +13,25 @@ interface IBenchmarkService {
 
 open class BenchmarkService : IBenchmarkService {
     override fun getBenchmarks(bounds: LatLngBounds): List<Benchmark>? {
-        val benchmarkDAO = RetrofitClientInstance.retrofitInstance?.create(IBenchmarkDAO::class.java)
-        val call = benchmarkDAO?.getBenchmarksByBounds(
-            bounds.southwest.latitude.toString(),
-            bounds.northeast.latitude.toString(),
-            bounds.southwest.longitude.toString(),
-            bounds.northeast.longitude.toString())
-        val response = call?.execute()
+        try {
+            val benchmarkDAO =
+                RetrofitClientInstance.retrofitInstance?.create(IBenchmarkDAO::class.java)
+            val call = benchmarkDAO?.getBenchmarksByBounds(
+                bounds.southwest.latitude.toString(),
+                bounds.northeast.latitude.toString(),
+                bounds.southwest.longitude.toString(),
+                bounds.northeast.longitude.toString()
+            )
+            val response = call?.execute()
 
-        return if (response?.isSuccessful == true && response.body() != null) {
-            response.body()!!
-        }else{
-            null
+            return if (response?.isSuccessful == true && response.body() != null) {
+                response.body()!!
+            } else {
+                null
+            }
+        }catch (e: IllegalStateException){
+            Log.e("BenchmarkService", e.toString())
+            return null
         }
     }
 
