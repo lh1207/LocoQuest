@@ -108,7 +108,7 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
             )
         }
 
-        inProximity = true // for testing
+        //inProximity = true // for testing
 
         if(!markerToBenchmark.contains(marker.position)) return true
 
