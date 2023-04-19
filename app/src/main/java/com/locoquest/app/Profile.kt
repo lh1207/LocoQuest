@@ -49,7 +49,9 @@ class Profile : Fragment(), OnLongClickListener, OnClickListener {
     }
 
     override fun onClick(view: View?) {
-        Home.selectedBenchmark = AppModule.user.benchmarks[view?.findViewById<TextView>(R.id.pid)?.text.toString()]
+        val pidT = view?.findViewById<TextView>(R.id.pid)?.text.toString()
+        val pid = pidT.substring(0, pidT.length-1)
+        Home.selectedBenchmark = AppModule.user.benchmarks[pid]
         activity?.findViewById<BottomNavigationView>(R.id.bottomNavigationView)?.selectedItemId = R.id.home
     }
 }

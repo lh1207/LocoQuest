@@ -24,7 +24,7 @@ class BenchmarkAdapter(private val benchmarks: ArrayList<Benchmark>,
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val benchmark = benchmarks[position]
-        holder.pid.text = benchmark.pid
+        holder.pid.text = "${benchmark.pid}:"
         holder.name.text = benchmark.name
         holder.latlng.text = "${benchmark.lat} ${benchmark.lon}"
 
