@@ -7,7 +7,6 @@ import com.squareup.moshi.Moshi
 interface IBenchmarkService {
     fun getBenchmarks(latLng: LatLng, r: Double): List<Benchmark>?
     fun getBenchmarkData(pidList: List<String>): List<Benchmark>?
-    fun getBenchmarks(latLng: LatLng, r: Double): List<Benchmark>?
     fun parseBenchmarkData(benchmarkJson: String): Any?
 }
 
@@ -32,18 +31,6 @@ open class BenchmarkService : IBenchmarkService {
         return if (response?.isSuccessful == true && response.body() != null) {
             response.body()!!
         } else {
-            null
-        }
-    }
-
-    override fun getBenchmarks(latLng: LatLng, r: Double): List<Benchmark>? {
-        val benchmarkDAO = RetrofitClientInstance.retrofitInstance?.create(IBenchmarkDAO::class.java)
-        val call = benchmarkDAO?.getBenchmarksByRadius(latLng.latitude, latLng.longitude, r)
-        val response = call?.execute()
-
-        return if (response?.isSuccessful == true && response.body() != null) {
-            response.body()!!
-        }else{
             null
         }
     }
