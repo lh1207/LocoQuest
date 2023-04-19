@@ -10,7 +10,6 @@ import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,6 +17,7 @@ import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getSystemService
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
@@ -30,11 +30,11 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
 import com.locoquest.app.AppModule.Companion.user
 import com.locoquest.app.Converters.Companion.toMarkerOptions
 import com.locoquest.app.dto.Benchmark
 import kotlinx.coroutines.launch
+
 
 class Home : Fragment(), GoogleMap.OnMarkerClickListener {
 
@@ -48,7 +48,6 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
     private var mapFragment: SupportMapFragment? = null
     private var markerToBenchmark: HashMap<Marker, Benchmark> = HashMap()
     private var benchmarkToMarker: HashMap<Benchmark, Marker> = HashMap()
-    private val benchmarkMileRadius = 1.0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,6 +69,7 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
             startLocationUpdates()
 
             map.setOnCameraMoveStartedListener { updateCamera = false }
+            map.setOnCameraMoveListener{ loadMarkers() }
             map.setOnMarkerClickListener(this)
 
             loadMarkers()
@@ -159,9 +159,9 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
 
         lifecycleScope.launch {
             try {
-                val target = map.cameraPosition.target
+                val bounds = map.projection.visibleRegion.latLngBounds
                 Thread {
-                    val benchmarkList = benchmarkService.getBenchmarks(target, benchmarkMileRadius)
+                    val benchmarkList = benchmarkService.getBenchmarks(bounds)
                     if (benchmarkList != null) {
                         if(benchmarkList.isEmpty()){
                             loadingMarkers = false

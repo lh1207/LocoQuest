@@ -15,5 +15,8 @@ interface IBenchmarkDAO {
 
     @GET("radial")
     fun getBenchmarksByRadius(@Query("lat") lat: Double, @Query("lon") lon: Double, @Query("radius") r: Double): Call<List<Benchmark>>
+
+    @GET("bounds")
+    fun getBenchmarksByBounds(@Query("minlat") minLat: String, @Query("maxlat") maxLat: String, @Query("minlon") minLon: String, @Query("maxlon") maxLon: String): Call<List<Benchmark>>
 }
 
