@@ -45,6 +45,7 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
     private var updateCamera = true
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var mapFragment: SupportMapFragment? = null
+    private var markerToBenchmark: HashMap<LatLng, Benchmark> = HashMap()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -109,9 +110,12 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
 
         inProximity = true // for testing
 
-        if(!user.benchmarks.contains(marker.position)) {
+        if(!markerToBenchmark.contains(marker.position)) return true
+
+        val benchmark = markerToBenchmark[marker.position]
+        if(!user.benchmarks.contains(benchmark?.pid)) {
             if(inProximity) {
-                user.benchmarks.add(marker.position)
+                user.benchmarks[benchmark!!.pid] = benchmark
                 Thread{AppModule.db?.localUserDAO()?.insert(user)}.start()
                 marker.setIcon(BitmapDescriptorFactory.defaultMarker(hue))
                 Toast.makeText(context, "Benchmark saved", Toast.LENGTH_SHORT).show()
@@ -162,6 +166,7 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
                             loadingMarkers = false
                             return@Thread
                         }
+                        markerToBenchmark.clear()
                         benchmarks = ArrayList(benchmarkList)
                         benchmarkList.forEach { benchmark ->
                             var marker = MarkerOptions()
@@ -174,7 +179,9 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
                                 .title(benchmark.name)
                                 .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHt}")
 
-                            if(user.benchmarks.contains(LatLng(benchmark.lat.toDouble(), benchmark.lon.toDouble())))
+                            markerToBenchmark[marker.position] = benchmark
+
+                            if(user.benchmarks.contains(benchmark.pid))
                                 marker = marker.icon(BitmapDescriptorFactory.defaultMarker(hue))
 
                             Handler(Looper.getMainLooper()).post { map.addMarker(marker)?.let { markers.add(it) } }
