@@ -1,8 +1,10 @@
 package com.locoquest.app
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -11,12 +13,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import androidx.core.content.ContextCompat
 import com.google.android.material.switchmaterial.SwitchMaterial
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
 private const val ARG_PARAM1 = "param1"
 private const val ARG_PARAM2 = "param2"
+private const val APPROXIMATE_LOCATION_PERMISSION_REQUEST_CODE = 101
 
 /**
  * A simple [Fragment] subclass.
@@ -69,8 +73,20 @@ class Settings : Fragment() {
 
         // Set an event listener for the approximate location toggle switch
         // If permissions are not granted, request permissions
-        approximateLocationToggle.setOnCheckedChangeListener { _, _ ->
-            // Do something when the toggle is checked or unchecked
+        approximateLocationToggle.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                // Do something when the toggle is checked
+                if (hasApproximateLocationPermission()) {
+                    // Do something with approximate location
+                } else {
+                    requestPermissions(
+                        arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION),
+                        APPROXIMATE_LOCATION_PERMISSION_REQUEST_CODE
+                    )
+                }
+            } else {
+                // Do something when the toggle is unchecked
+            }
         }
 
         // Set an event listener for the request permissions button
@@ -86,6 +102,13 @@ class Settings : Fragment() {
 
     private fun requestPreciseLocationPermission() {
         TODO("Not yet implemented")
+    }
+
+    private fun hasApproximateLocationPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
     }
 
     companion object {
