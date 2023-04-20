@@ -1,10 +1,17 @@
 package com.locoquest.app
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import com.google.android.material.switchmaterial.SwitchMaterial
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -35,6 +42,30 @@ class Settings : Fragment() {
     ): View? {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_settings, container, false)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        // Get references to the switches and button in the layout
+        val preciseLocationToggle = view.findViewById<SwitchMaterial>(R.id.preciseLocationToggle)
+        val approximateLocationToggle = view.findViewById<SwitchMaterial>(R.id.approximateLocationToggle)
+        val requestPermissionsButton = view.findViewById<Button>(R.id.requestPermissionsButton)
+
+        // Set an event listener for the precise location toggle switch
+        preciseLocationToggle.setOnCheckedChangeListener { _, _ ->
+            // Do something when the toggle is checked or unchecked
+        }
+
+        // Set an event listener for the approximate location toggle switch
+        approximateLocationToggle.setOnCheckedChangeListener { _, _ ->
+            // Do something when the toggle is checked or unchecked
+        }
+
+        // Set an event listener for the request permissions button
+        requestPermissionsButton.setOnClickListener {
+            // Do something when the button is clicked
+        }
     }
 
     companion object {

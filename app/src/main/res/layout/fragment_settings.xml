@@ -21,34 +21,22 @@
         android:background="@android:color/darker_gray"
         android:layout_below="@id/titleTextView" />
 
-    <!-- Notification Toggle -->
-    <Switch
-        android:id="@+id/notificationToggle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/notifications"
-        android:padding="16dp"
-        android:layout_below="@id/divider"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginTop="16dp"
-        tools:ignore="UseSwitchCompatOrMaterialXml,VisualLintButtonSize" />
-
     <!-- Precise Location Toggle -->
-    <Switch
+    <com.google.android.material.switchmaterial.SwitchMaterial
         android:id="@+id/preciseLocationToggle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/precise_location"
         android:padding="16dp"
-        android:layout_below="@id/notificationToggle"
+        android:layout_below="@id/titleTextView"
         android:layout_alignParentStart="true"
         android:layout_alignParentEnd="true"
         android:layout_marginTop="16dp"
+        android:checked="false"
         tools:ignore="UseSwitchCompatOrMaterialXml,VisualLintButtonSize" />
 
     <!-- Approximate Location Toggle -->
-    <Switch
+    <com.google.android.material.switchmaterial.SwitchMaterial
         android:id="@+id/approximateLocationToggle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -58,6 +46,7 @@
         android:layout_alignParentStart="true"
         android:layout_alignParentEnd="true"
         android:layout_marginTop="16dp"
+        android:checked="false"
         tools:ignore="UseSwitchCompatOrMaterialXml,VisualLintButtonSize" />
 
     <!-- Request Permissions Button -->
