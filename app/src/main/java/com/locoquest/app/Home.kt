@@ -67,7 +67,8 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
         val view = inflater.inflate(R.layout.fragment_home, container, false)
 
         mapFragment = childFragmentManager.findFragmentById(R.id.map_container) as? SupportMapFragment
-
+        if(savedInstanceState != null)
+            mapFragment?.onCreate(savedInstanceState)
         mapFragment?.getMapAsync { map ->
             googleMap = map
             startLocationUpdates()
@@ -91,6 +92,11 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
         }
 
         return view
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        mapFragment?.onSaveInstanceState(outState)
     }
 
     override fun onResume() {
