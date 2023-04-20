@@ -53,19 +53,39 @@ class Settings : Fragment() {
         val requestPermissionsButton = view.findViewById<Button>(R.id.requestPermissionsButton)
 
         // Set an event listener for the precise location toggle switch
-        preciseLocationToggle.setOnCheckedChangeListener { _, _ ->
-            // Do something when the toggle is checked or unchecked
+        // If permissions are not granted, request permissions
+        preciseLocationToggle.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                // Do something when the toggle is checked
+                if (hasPreciseLocationPermission()) {
+                    // Do something with precise location
+                } else {
+                    requestPreciseLocationPermission()
+                }
+            } else {
+                // Do something when the toggle is unchecked
+            }
         }
 
         // Set an event listener for the approximate location toggle switch
+        // If permissions are not granted, request permissions
         approximateLocationToggle.setOnCheckedChangeListener { _, _ ->
             // Do something when the toggle is checked or unchecked
         }
 
         // Set an event listener for the request permissions button
+        // Only shows if permissions are not granted
         requestPermissionsButton.setOnClickListener {
             // Do something when the button is clicked
         }
+    }
+
+    private fun hasPreciseLocationPermission(): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    private fun requestPreciseLocationPermission() {
+        TODO("Not yet implemented")
     }
 
     companion object {
