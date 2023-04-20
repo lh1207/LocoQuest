@@ -102,13 +102,28 @@ class Settings : Fragment() {
         // Set an event listener for the request permissions button
         // Only shows if permissions are not granted
         requestPermissionsButton.setOnClickListener {
-            if (hasApproximateLocationPermission()) {
-                // Permission is already granted, do something
-            } else {
-                // Request the approximate location permission
+            if (!hasPreciseLocationPermission()) {
+                requestPreciseLocationPermission()
+            } else if (!hasApproximateLocationPermission()) {
                 requestApproximateLocationPermission()
             }
         }
+
+        // Set an event listener for the precise location toggle switch
+        // If permissions are not granted, request permissions
+        preciseLocationToggle.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                // Do something when the toggle is checked
+                if (hasPreciseLocationPermission()) {
+                    // Do something with precise location
+                } else {
+                    requestPreciseLocationPermission()
+                }
+            } else {
+                // Do something when the toggle is unchecked
+            }
+        }
+
     }
 
     private fun hasPreciseLocationPermission(): Boolean {
