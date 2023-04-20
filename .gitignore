@@ -16,3 +16,6 @@ local.properties
 *.aab
 *.jks
 keystore_pw.txt
+*.apk
+app/debug/output-metadata.json
+app/release/output-metadata.json
