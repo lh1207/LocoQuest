@@ -1,6 +1,7 @@
 package com.locoquest.app
 
 import android.Manifest
+import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -15,6 +16,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.material.switchmaterial.SwitchMaterial
 
@@ -23,6 +25,7 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 private const val ARG_PARAM1 = "param1"
 private const val ARG_PARAM2 = "param2"
 private lateinit var permissionLauncher: ActivityResultLauncher<Array<String>>
+
 
 /**
  * A simple [Fragment] subclass.
@@ -69,7 +72,6 @@ class Settings : Fragment() {
         }
 
         // Set an event listener for the precise location toggle switch
-        // If permissions are not granted, request permissions
         preciseLocationToggle.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 // Do something when the toggle is checked
@@ -89,7 +91,6 @@ class Settings : Fragment() {
         }
 
         // Set an event listener for the approximate location toggle switch
-        // If permissions are not granted, request permissions
         approximateLocationToggle.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 // Do something when the toggle is checked
@@ -127,9 +128,12 @@ class Settings : Fragment() {
         ) == PackageManager.PERMISSION_GRANTED
     }
 
+    // Function to request precise location permission
     private fun requestPreciseLocationPermission() {
-        permissionLauncher.launch(
-            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+        ActivityCompat.requestPermissions(
+            Activity(),
+            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+            REQUEST_CODE_PRECISE_LOCATION_PERMISSION
         )
     }
 
@@ -146,6 +150,28 @@ class Settings : Fragment() {
         )
     }
 
+    // Handle the result of the permission request
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_CODE_PRECISE_LOCATION_PERMISSION) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission granted, do something with precise location
+            } else {
+                // Permission not granted, do something else
+            }
+        } else if (requestCode == REQUEST_CODE_APPROXIMATE_LOCATION_PERMISSION) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission granted, do something with approximate location
+            } else {
+                // Permission not granted, do something else
+            }
+        }
+    }
+
     companion object {
         /**
          * Use this factory method to create a new instance of
@@ -155,7 +181,11 @@ class Settings : Fragment() {
          * @param param2 Parameter 2.
          * @return A new instance of fragment Settings.
          */
-        // TODO: Rename and change types and number of parameters
+
+        // declarations for onViewCreated functions and methods
+        private const val REQUEST_CODE_PRECISE_LOCATION_PERMISSION = 1
+        private const val REQUEST_CODE_APPROXIMATE_LOCATION_PERMISSION = 2
+
         @JvmStatic
         fun newInstance(param1: String, param2: String) =
             Settings().apply {
