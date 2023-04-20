@@ -4,6 +4,7 @@ import com.google.android.gms.maps.model.LatLngBounds
 import com.locoquest.app.RetrofitClientInstance
 import com.locoquest.app.dao.IBenchmarkDAO
 import com.locoquest.app.dto.Benchmark
+import java.net.SocketTimeoutException
 
 interface IBenchmarkService {
     fun getBenchmarks(bounds: LatLngBounds): List<Benchmark>?
@@ -29,10 +30,13 @@ open class BenchmarkService : IBenchmarkService {
             } else {
                 null
             }
-        }catch (e: IllegalStateException){
+        } catch (e: IllegalStateException) {
             Log.e("BenchmarkService", e.toString())
-            return null
+        } catch (e: SocketTimeoutException) {
+            Log.e("BenchmarkService", e.toString())
         }
+
+        return null
     }
 
     override fun getBenchmarks(latLng: LatLng, r: Double): List<Benchmark>? {
