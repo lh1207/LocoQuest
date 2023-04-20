@@ -227,7 +227,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
 
                         // Find new and existing benchmarks
                         for (benchmark in benchmarkList)
-                            if (user.benchmarks.containsKey(benchmark.pid))
+                            if (benchmarkToMarker.keys.contains(benchmark))
                                 existingBenchmarks.add(benchmark)
                             else newBenchmarks.add(benchmark)
 
