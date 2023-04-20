@@ -286,9 +286,26 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadFragment(fragment: Fragment) {
-        val transaction = supportFragmentManager.beginTransaction()
-        transaction.replace(R.id.container,fragment)
-        transaction.commit()
+        when (fragment) {
+            is Home -> {
+                supportFragmentManager.beginTransaction()
+                    .add(R.id.container, fragment, "HomeFragment")
+                    .show(fragment)
+                    .commit()
+            }
+            is Profile -> {
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.container, fragment)
+                    .addToBackStack(null)
+                    .commit()
+            }
+            is Settings -> {
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.container, fragment)
+                    .addToBackStack(null)
+                    .commit()
+            }
+        }
     }
 
     companion object {
