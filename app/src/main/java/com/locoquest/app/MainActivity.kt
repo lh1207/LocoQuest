@@ -48,8 +48,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var signUpRequest: BeginSignInRequest
     private lateinit var signInButton: SignInButton // Declare the variable here
     private lateinit var menu: Menu
-    private lateinit var home: Home
-    private var switching = false
+    private lateinit var bottomNav: BottomNavigationView
+    private var home: Home = Home()
+    private var switchingUser = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,10 +58,9 @@ class MainActivity : AppCompatActivity() {
 
         signInButton = findViewById(R.id.google_sign_in_button)
 
-        home = Home()
         loadFragment(home)
 
-        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigationView)
+        bottomNav = findViewById(R.id.bottomNavigationView)
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.home -> {
@@ -266,9 +266,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun switchUser(){
-        if(!switching)
+        if(!switchingUser)
             Thread{
-                switching = true
+                switchingUser = true
                 val userDao = db!!.localUserDAO()
                 val tmpUser = userDao.getUser(user.uid)
                 if(tmpUser == null) {
@@ -276,9 +276,12 @@ class MainActivity : AppCompatActivity() {
                 }else user = tmpUser
                 Handler(Looper.getMainLooper()).post{
                     supportActionBar?.title = user.displayName
-                    home.loadMarkers(true)
+                    when(bottomNav.selectedItemId){
+                        R.id.home -> home.loadMarkers(true)
+                        R.id.profile -> loadFragment(Profile())
+                    }
                 }
-                switching = false
+                switchingUser = false
             }.start()
     }
 

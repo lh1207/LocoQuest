@@ -59,6 +59,8 @@ class Profile : Fragment(), OnLongClickListener, OnClickListener {
                 override fun onLoadCleared(placeholder: Drawable?) {}
             })
 
+        view.findViewById<TextView>(R.id.nameTextView).text = user.displayName
+
         view.findViewById<Button>(R.id.editNameButton).setOnClickListener {
             val builder = AlertDialog.Builder(context)
             builder.setTitle("Enter Your Name")

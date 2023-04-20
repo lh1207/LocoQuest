@@ -96,7 +96,7 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
     override fun onResume() {
         super.onResume()
         mapFragment?.onResume()
-        startLocationUpdates()
+        startLocationUpdates(false)
         cameraIsMoving = false
     }
 
@@ -245,7 +245,8 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
         } else null
     }
 
-    fun startLocationUpdates() {
+    fun startLocationUpdates(){startLocationUpdates(true)}
+    private fun startLocationUpdates(request: Boolean) {
         // Check network connectivity and start location updates accordingly
         val connectivityManager =
             getSystemService(requireContext(), ConnectivityManager::class.java) as ConnectivityManager
@@ -264,8 +265,7 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
                     Manifest.permission.ACCESS_COARSE_LOCATION
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
-                // Request location permissions if not granted
-                requestLocationPermission()
+                if(request) requestLocationPermission()
                 return
             }
             // Request location updates using fusedLocationClient
