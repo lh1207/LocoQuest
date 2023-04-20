@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -29,26 +30,18 @@ class Settings : Fragment() {
         // Get reference to the request permissions button in the layout
         val requestPermissionsButton = view.findViewById<Button>(R.id.requestPermissionsButton)
 
-        // Define the permission request contract
-        permissionLauncher = registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions()
-        ) { permissions ->
-            permissions.entries.forEach {
-                if (it.value == false) {
-                    // Permission is not granted, do something
-                } else {
-                    // Permission is granted, do something else
-                }
-            }
-        }
-
         // Set an event listener for the request permissions button
         requestPermissionsButton.setOnClickListener {
-            if (!hasLocationPermission()) {
+            if (hasLocationPermission()) {
+                // Location permission is already granted, display a toast message
+                Toast.makeText(requireContext(), "Location permission is already granted", Toast.LENGTH_SHORT).show()
+            } else {
+                // Location permission is not granted, request the permission
                 requestLocationPermission()
             }
         }
-    }
+        }
+
 
     private fun hasLocationPermission(): Boolean {
         return ContextCompat.checkSelfPermission(
