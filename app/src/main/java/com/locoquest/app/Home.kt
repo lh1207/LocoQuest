@@ -219,13 +219,31 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
                                 return@Thread
                             }
 
-                            markerToBenchmark.clear()
-                            benchmarkToMarker.clear()
+                            val newBenchmarks = mutableListOf<Benchmark>()
+                            val existingBenchmarks = mutableListOf<Benchmark>()
 
-                            Handler(Looper.getMainLooper()).post {
-                                map.clear()
-                                goToSelectedBenchmark()
-                                benchmarkList.forEach { addBenchmarkToMap(it) }
+                            // Find new and existing benchmarks
+                            for (benchmark in benchmarkList)
+                                if (user.benchmarks.containsKey(benchmark.pid))
+                                    existingBenchmarks.add(benchmark)
+                                else newBenchmarks.add(benchmark)
+
+                            // Remove markers for deleted benchmarks
+                            val iterator = benchmarkToMarker.iterator()
+                            while (iterator.hasNext()) {
+                                val entry = iterator.next()
+                                if (!benchmarkList.contains(entry.key)) {
+                                    val marker = entry.value
+                                    iterator.remove()
+                                    markerToBenchmark.remove(marker)
+                                    Handler(Looper.getMainLooper()).post{marker.remove()}
+                                }
+                            }
+
+                            // Add markers for new benchmarks
+                            Handler(Looper.getMainLooper()).post{
+                                for (benchmark in newBenchmarks)
+                                    addBenchmarkToMap(benchmark)
                             }
                         } else {
                             println("Error: unable to retrieve benchmark data")
