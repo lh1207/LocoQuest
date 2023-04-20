@@ -102,10 +102,13 @@ class Settings : Fragment() {
         // Set an event listener for the request permissions button
         // Only shows if permissions are not granted
         requestPermissionsButton.setOnClickListener {
-            // Do something when the button is clicked
+            if (hasApproximateLocationPermission()) {
+                // Permission is already granted, do something
+            } else {
+                // Request the approximate location permission
+                requestApproximateLocationPermission()
+            }
         }
-
-        //
     }
 
     private fun hasPreciseLocationPermission(): Boolean {
