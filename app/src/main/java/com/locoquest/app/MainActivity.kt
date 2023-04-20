@@ -46,7 +46,6 @@ class MainActivity : AppCompatActivity() {
     private val auth = FirebaseAuth.getInstance()
     private lateinit var oneTapClient: SignInClient
     private lateinit var signUpRequest: BeginSignInRequest
-    private lateinit var signInButton: SignInButton // Declare the variable here
     private lateinit var menu: Menu
     private lateinit var bottomNav: BottomNavigationView
     private var home: Home = Home()
@@ -55,8 +54,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        signInButton = findViewById(R.id.google_sign_in_button)
 
         loadFragment(home)
 

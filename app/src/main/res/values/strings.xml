@@ -22,4 +22,8 @@
     <string name="todo">TODO</string>
     <string name="edit_name">Edit Name</string>
     <string name="completed_benchmarks">Completed Benchmarks</string>
+    <string name="def">Default</string>
+    <string name="hybrid">Hybrid</string>
+    <string name="satellite">Satellite</string>
+    <string name="terrain">Terrain</string>
 </resources>

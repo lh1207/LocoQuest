@@ -16,6 +16,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -30,23 +31,22 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.GoogleMap.CancelableCallback
+import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.locoquest.app.AppModule.Companion.user
 import com.locoquest.app.Converters.Companion.toMarkerOptions
 import com.locoquest.app.dto.Benchmark
 import kotlinx.coroutines.launch
 
-class Home : Fragment(), GoogleMap.OnMarkerClickListener {
+class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
 
     private var googleMap: GoogleMap? = null
-    private var markers: ArrayList<Marker> = ArrayList()
-    private val hue = 200f
     private var cameraIsMoving = false
-    private val cameraAnimationDuration = 2000
-    private val defaultCameraZoom = 15f
     private var loadingMarkers = false
     private var cameraMovedByUser = false
     private var updateCameraOnLocationUpdate = true
@@ -66,32 +66,62 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_home, container, false)
 
-        mapFragment = childFragmentManager.findFragmentById(R.id.map_container) as? SupportMapFragment
-        if(savedInstanceState != null)
+        mapFragment =
+            childFragmentManager.findFragmentById(R.id.map_container) as? SupportMapFragment
+        if (savedInstanceState != null)
             mapFragment?.onCreate(savedInstanceState)
-        mapFragment?.getMapAsync { map ->
-            googleMap = map
-            startLocationUpdates()
+        else mapFragment?.getMapAsync(this)
 
-            map.setOnCameraMoveListener {
-                loadMarkers()
-            }
-            map.setOnCameraMoveStartedListener{
-                updateCameraOnLocationUpdate = !cameraMovedByUser
-                cameraMovedByUser = true
-            }
-            map.setOnMarkerClickListener(this)
-            map.setOnMyLocationButtonClickListener {
-                updateCameraWithLastLocation()
-                cameraMovedByUser = false
-                updateCameraOnLocationUpdate = true
-                true
-            }
+        val layersLayout = view.findViewById<LinearLayout>(R.id.layers_layout)
+        val layersFab = view.findViewById<FloatingActionButton>(R.id.layersFab)
+        layersFab.setOnClickListener { layersLayout.visibility = if(layersLayout.visibility == View.GONE) View.VISIBLE else View.GONE }
 
-            updateCameraWithLastLocation()
+        val layersClickListener = View.OnClickListener {
+            when(it.id){
+                R.id.normalLayerFab -> {
+                    mapType(GoogleMap.MAP_TYPE_NORMAL)
+                }
+                R.id.hybridLayerFab -> {
+                    mapType(GoogleMap.MAP_TYPE_HYBRID)
+                }
+                R.id.satelliteLayerFab -> {
+                    mapType(GoogleMap.MAP_TYPE_SATELLITE)
+                }
+                R.id.terrainLayerFab -> {
+                    mapType(GoogleMap.MAP_TYPE_TERRAIN)
+                }
+            }
+            googleMap?.mapType = mapType()
+            layersFab.performClick()
         }
 
+        view.findViewById<ExtendedFloatingActionButton>(R.id.normalLayerFab).setOnClickListener(layersClickListener)
+        view.findViewById<ExtendedFloatingActionButton>(R.id.hybridLayerFab).setOnClickListener(layersClickListener)
+        view.findViewById<ExtendedFloatingActionButton>(R.id.satelliteLayerFab).setOnClickListener(layersClickListener)
+        view.findViewById<ExtendedFloatingActionButton>(R.id.terrainLayerFab).setOnClickListener(layersClickListener)
+
         return view
+    }
+    override fun onMapReady(map: GoogleMap) {
+        googleMap = map
+        startLocationUpdates()
+        map.mapType = mapType()
+        map.setOnCameraMoveListener {
+            loadMarkers()
+        }
+        map.setOnCameraMoveStartedListener {
+            updateCameraOnLocationUpdate = !cameraMovedByUser
+            cameraMovedByUser = true
+        }
+        map.setOnMarkerClickListener(this)
+        map.setOnMyLocationButtonClickListener {
+            updateCameraWithLastLocation()
+            cameraMovedByUser = false
+            updateCameraOnLocationUpdate = true
+            true
+        }
+
+        updateCameraWithLastLocation()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -136,7 +166,7 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
             if(inProximity) {
                 user.benchmarks[benchmark!!.pid] = benchmark
                 Thread{AppModule.db?.localUserDAO()?.insert(user)}.start()
-                marker.setIcon(BitmapDescriptorFactory.defaultMarker(hue))
+                marker.setIcon(BitmapDescriptorFactory.defaultMarker(HUE))
                 Toast.makeText(context, "Benchmark completed", Toast.LENGTH_SHORT).show()
             }else{
                 Toast.makeText(context, "Not close enough to complete", Toast.LENGTH_SHORT).show()
@@ -242,13 +272,13 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
     private fun addBenchmarkToMap(benchmark: Benchmark) : Marker? {
         var options = toMarkerOptions(benchmark)
         if(user.benchmarks.contains(benchmark.pid))
-            options = options.icon(BitmapDescriptorFactory.defaultMarker(hue))
+            options = options.icon(BitmapDescriptorFactory.defaultMarker(HUE))
         val marker = googleMap!!.addMarker(options)
-        return if(marker?.let { markers.add(it) } == true) {
+        if(marker != null) {
             markerToBenchmark[marker] = benchmark
             benchmarkToMarker[benchmark] = marker
-            marker
-        } else null
+        }
+        return marker
     }
 
     fun startLocationUpdates(){startLocationUpdates(true)}
@@ -318,8 +348,8 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
         cameraIsMoving = true
         googleMap?.animateCamera(
             CameraUpdateFactory.newLatLngZoom(
-                LatLng(lastLocation.latitude, lastLocation.longitude), defaultCameraZoom
-            ), cameraAnimationDuration, object : CancelableCallback {
+                LatLng(lastLocation.latitude, lastLocation.longitude), DEFAULT_ZOOM
+            ), CAMERA_ANIMATION_DURATION, object : CancelableCallback {
                 override fun onFinish() {
                     loadMarkers()
                     cameraIsMoving = false
@@ -358,7 +388,21 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
         return location
     }
 
+    private fun mapType(type: Int){
+        with (prefs().edit()) {
+            putInt("mapType", type)
+            apply()
+        }
+    }
+
+    private fun mapType() : Int {
+        return prefs().getInt("mapType", GoogleMap.MAP_TYPE_NORMAL)
+    }
+
     companion object{
         var selectedBenchmark: Benchmark? = null
+        private const val HUE = 200f
+        private const val DEFAULT_ZOOM = 15f
+        private const val CAMERA_ANIMATION_DURATION = 2000
     }
 }
