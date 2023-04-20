@@ -2,14 +2,8 @@ package com.locoquest.app
 
 import android.Manifest
 import android.app.Activity
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
-import android.util.Log
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,6 +12,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
 import com.google.android.material.switchmaterial.SwitchMaterial
 
 // TODO: Rename parameter arguments, choose names that match
@@ -130,10 +125,8 @@ class Settings : Fragment() {
 
     // Function to request precise location permission
     private fun requestPreciseLocationPermission() {
-        ActivityCompat.requestPermissions(
-            Activity(),
-            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-            REQUEST_CODE_PRECISE_LOCATION_PERMISSION
+        preciseLocationPermissionLauncher.launch(
+            Manifest.permission.ACCESS_FINE_LOCATION
         )
     }
 
@@ -145,30 +138,30 @@ class Settings : Fragment() {
     }
 
     private fun requestApproximateLocationPermission() {
-        permissionLauncher.launch(
-            arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION)
+        approximateLocationPermissionLauncher.launch(
+            Manifest.permission.ACCESS_COARSE_LOCATION
         )
     }
 
     // Handle the result of the permission request
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_CODE_PRECISE_LOCATION_PERMISSION) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission granted, do something with precise location
-            } else {
-                // Permission not granted, do something else
-            }
-        } else if (requestCode == REQUEST_CODE_APPROXIMATE_LOCATION_PERMISSION) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission granted, do something with approximate location
-            } else {
-                // Permission not granted, do something else
-            }
+    private val preciseLocationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            // Permission granted, do something with precise location
+        } else {
+            // Permission not granted, do something else
+        }
+    }
+
+    // Handle the result of the permission request
+    private val approximateLocationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            // Permission granted, do something with approximate location
+        } else {
+            // Permission not granted, do something else
         }
     }
 
