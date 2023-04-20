@@ -96,7 +96,8 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
     override fun onResume() {
         super.onResume()
         mapFragment?.onResume()
-        startLocationUpdates()
+        startLocationUpdates(false)
+        cameraIsMoving = false
     }
 
     override fun onPause() {
@@ -116,16 +117,11 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
     }
 
     override fun onMarkerClick(marker: Marker): Boolean {
-        var inProximity = false
         val lastLocation = lastLocation()
-        if(lastLocation != null) {
-            inProximity = isWithin500Feet(
-                marker.position,
-                LatLng(lastLocation.latitude, lastLocation.longitude)
-            )
-        }
-
-        //inProximity = true // for testing
+        val inProximity = isWithin500Feet(
+            marker.position,
+            LatLng(lastLocation.latitude, lastLocation.longitude)
+        )
 
         if(!markerToBenchmark.contains(marker)) return true
 
@@ -140,6 +136,9 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
                 Toast.makeText(context, "Not close enough to complete", Toast.LENGTH_SHORT).show()
             }
         }
+
+        updateCameraOnLocationUpdate = false
+        cameraMovedByUser = true
 
         // Return false to indicate that we have not consumed the event and that we wish
         // for the default behavior to occur (which is for the camera to move such that the
@@ -165,8 +164,9 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
         return feet <= 500.0
     }
 
-    fun loadMarkers(){
-        if(loadingMarkers || googleMap == null) return
+    fun loadMarkers(){loadMarkers(false)}
+    fun loadMarkers(isUserSwitched: Boolean){
+        if((loadingMarkers && !isUserSwitched)|| googleMap == null) return
         loadingMarkers = true
         val map = googleMap!!
         val benchmarkService: IBenchmarkService = BenchmarkService()
@@ -178,7 +178,7 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
                     try {
                         val benchmarkList = benchmarkService.getBenchmarks(bounds)
                         if (benchmarkList != null) {
-                            if (benchmarkList.isEmpty() || isSameBenchmarks(benchmarkList)) {
+                            if (benchmarkList.isEmpty() || (isSameBenchmarks(benchmarkList) && !isUserSwitched)) {
                                 loadingMarkers = false
                                 return@Thread
                             }
@@ -245,7 +245,8 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
         } else null
     }
 
-    fun startLocationUpdates() {
+    fun startLocationUpdates(){startLocationUpdates(true)}
+    private fun startLocationUpdates(request: Boolean) {
         // Check network connectivity and start location updates accordingly
         val connectivityManager =
             getSystemService(requireContext(), ConnectivityManager::class.java) as ConnectivityManager
@@ -264,8 +265,7 @@ class Home : Fragment(), GoogleMap.OnMarkerClickListener {
                     Manifest.permission.ACCESS_COARSE_LOCATION
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
-                // Request location permissions if not granted
-                requestLocationPermission()
+                if(request) requestLocationPermission()
                 return
             }
             // Request location updates using fusedLocationClient
