@@ -13,6 +13,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import com.google.android.material.switchmaterial.SwitchMaterial
 
@@ -20,6 +22,7 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
 private const val ARG_PARAM1 = "param1"
 private const val ARG_PARAM2 = "param2"
+private lateinit var permissionLauncher: ActivityResultLauncher<Array<String>>
 private const val APPROXIMATE_LOCATION_PERMISSION_REQUEST_CODE = 101
 
 /**
@@ -55,6 +58,16 @@ class Settings : Fragment() {
         val preciseLocationToggle = view.findViewById<SwitchMaterial>(R.id.preciseLocationToggle)
         val approximateLocationToggle = view.findViewById<SwitchMaterial>(R.id.approximateLocationToggle)
         val requestPermissionsButton = view.findViewById<Button>(R.id.requestPermissionsButton)
+        permissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions ->
+            // Check if the permission is granted and do something accordingly
+            if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true) {
+                // Permission is granted, do something
+            } else {
+                // Permission is not granted, show a message or do something else
+            }
+        }
 
         // Set an event listener for the precise location toggle switch
         // If permissions are not granted, request permissions
@@ -79,10 +92,7 @@ class Settings : Fragment() {
                 if (hasApproximateLocationPermission()) {
                     // Do something with approximate location
                 } else {
-                    requestPermissions(
-                        arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION),
-                        APPROXIMATE_LOCATION_PERMISSION_REQUEST_CODE
-                    )
+                    requestApproximateLocationPermission()
                 }
             } else {
                 // Do something when the toggle is unchecked
@@ -94,6 +104,8 @@ class Settings : Fragment() {
         requestPermissionsButton.setOnClickListener {
             // Do something when the button is clicked
         }
+
+        //
     }
 
     private fun hasPreciseLocationPermission(): Boolean {
@@ -109,6 +121,12 @@ class Settings : Fragment() {
             requireContext(),
             Manifest.permission.ACCESS_COARSE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun requestApproximateLocationPermission() {
+        permissionLauncher.launch(
+            arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION)
+        )
     }
 
     companion object {
