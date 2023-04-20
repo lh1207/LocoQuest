@@ -213,41 +213,41 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
                 Thread {
                     try {
                         val benchmarkList = benchmarkService.getBenchmarks(bounds)
-                        if (benchmarkList != null) {
-                            if (benchmarkList.isEmpty() || (isSameBenchmarks(benchmarkList) && !isUserSwitched)) {
-                                loadingMarkers = false
-                                return@Thread
-                            }
-
-                            val newBenchmarks = mutableListOf<Benchmark>()
-                            val existingBenchmarks = mutableListOf<Benchmark>()
-
-                            // Find new and existing benchmarks
-                            for (benchmark in benchmarkList)
-                                if (user.benchmarks.containsKey(benchmark.pid))
-                                    existingBenchmarks.add(benchmark)
-                                else newBenchmarks.add(benchmark)
-
-                            // Remove markers for deleted benchmarks
-                            val iterator = benchmarkToMarker.iterator()
-                            while (iterator.hasNext()) {
-                                val entry = iterator.next()
-                                if (!benchmarkList.contains(entry.key)) {
-                                    val marker = entry.value
-                                    iterator.remove()
-                                    markerToBenchmark.remove(marker)
-                                    Handler(Looper.getMainLooper()).post{marker.remove()}
-                                }
-                            }
-
-                            // Add markers for new benchmarks
-                            Handler(Looper.getMainLooper()).post{
-                                goToSelectedBenchmark()
-                                for (benchmark in newBenchmarks)
-                                    addBenchmarkToMap(benchmark)
-                            }
-                        } else {
+                        if (benchmarkList == null) {
                             println("Error: unable to retrieve benchmark data")
+                            return@Thread
+                        }
+                        if (benchmarkList.isEmpty() || (isSameBenchmarks(benchmarkList) && !isUserSwitched)) {
+                            loadingMarkers = false
+                            return@Thread
+                        }
+
+                        val newBenchmarks = mutableListOf<Benchmark>()
+                        val existingBenchmarks = mutableListOf<Benchmark>()
+
+                        // Find new and existing benchmarks
+                        for (benchmark in benchmarkList)
+                            if (user.benchmarks.containsKey(benchmark.pid))
+                                existingBenchmarks.add(benchmark)
+                            else newBenchmarks.add(benchmark)
+
+                        // Remove markers for deleted benchmarks
+                        val iterator = benchmarkToMarker.iterator()
+                        while (iterator.hasNext()) {
+                            val entry = iterator.next()
+                            if (!benchmarkList.contains(entry.key)) {
+                                val marker = entry.value
+                                iterator.remove()
+                                markerToBenchmark.remove(marker)
+                                Handler(Looper.getMainLooper()).post { marker.remove() }
+                            }
+                        }
+
+                        // Add markers for new benchmarks
+                        Handler(Looper.getMainLooper()).post {
+                            goToSelectedBenchmark()
+                            for (benchmark in newBenchmarks)
+                                addBenchmarkToMap(benchmark)
                         }
                     }catch (e: ConcurrentModificationException){
                         Log.e("LoadMarkers", e.toString())
