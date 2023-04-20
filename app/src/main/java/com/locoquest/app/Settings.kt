@@ -23,7 +23,6 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 private const val ARG_PARAM1 = "param1"
 private const val ARG_PARAM2 = "param2"
 private lateinit var permissionLauncher: ActivityResultLauncher<Array<String>>
-private const val APPROXIMATE_LOCATION_PERMISSION_REQUEST_CODE = 101
 
 /**
  * A simple [Fragment] subclass.
@@ -81,6 +80,11 @@ class Settings : Fragment() {
                 }
             } else {
                 // Do something when the toggle is unchecked
+                if (hasPreciseLocationPermission()) {
+                    // Do something when the toggle is unchecked and the permission is granted
+                } else {
+                    // Do something when the toggle is unchecked and the permission is not granted
+                }
             }
         }
 
@@ -96,6 +100,11 @@ class Settings : Fragment() {
                 }
             } else {
                 // Do something when the toggle is unchecked
+                if (hasApproximateLocationPermission()) {
+                    // Do something when the toggle is unchecked and the permission is granted
+                } else {
+                    // Do something when the toggle is unchecked and the permission is not granted
+                }
             }
         }
 
@@ -106,21 +115,6 @@ class Settings : Fragment() {
                 requestPreciseLocationPermission()
             } else if (!hasApproximateLocationPermission()) {
                 requestApproximateLocationPermission()
-            }
-        }
-
-        // Set an event listener for the precise location toggle switch
-        // If permissions are not granted, request permissions
-        preciseLocationToggle.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                // Do something when the toggle is checked
-                if (hasPreciseLocationPermission()) {
-                    // Do something with precise location
-                } else {
-                    requestPreciseLocationPermission()
-                }
-            } else {
-                // Do something when the toggle is unchecked
             }
         }
 
