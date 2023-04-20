@@ -242,6 +242,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
 
                             // Add markers for new benchmarks
                             Handler(Looper.getMainLooper()).post{
+                                goToSelectedBenchmark()
                                 for (benchmark in newBenchmarks)
                                     addBenchmarkToMap(benchmark)
                             }
