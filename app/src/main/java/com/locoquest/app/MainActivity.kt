@@ -285,6 +285,7 @@ class MainActivity : AppCompatActivity() {
     private fun loadFragment(fragment: Fragment) {
         when (fragment) {
             is Home -> {
+                if(fragment.isAdded) return
                 supportFragmentManager.beginTransaction()
                     .add(R.id.container, fragment, "HomeFragment")
                     .show(fragment)
