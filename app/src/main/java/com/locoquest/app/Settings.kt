@@ -109,11 +109,16 @@ class Settings : Fragment() {
     }
 
     private fun hasPreciseLocationPermission(): Boolean {
-        TODO("Not yet implemented")
+        return ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun requestPreciseLocationPermission() {
-        TODO("Not yet implemented")
+        permissionLauncher.launch(
+            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+        )
     }
 
     private fun hasApproximateLocationPermission(): Boolean {
