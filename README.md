@@ -3,7 +3,6 @@
 LocoQuest is an Android app that offers an interactive scavenger hunt experience using your device's geolocation capabilities. With LocoQuest, you can:
 
 - Explore new places and take on a unique scavenger hunt by finding hidden treasures
-- Utilize benchmarks provided by the National Geodetic Survey, which maintains a network of benchmarks across the United States
 - Use benchmarks to provide a reference point for mapping and surveying
 - Enjoy a fun and educational way to explore the world around you
 
