@@ -2,8 +2,11 @@ package com.locoquest.app
 
 import android.Manifest
 import android.content.DialogInterface
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,6 +21,7 @@ import androidx.fragment.app.Fragment
 class Settings : Fragment() {
     private lateinit var permissionLauncher: ActivityResultLauncher<Array<String>>
     private lateinit var rationaleDialog: AlertDialog
+    private lateinit var settingsDialog: AlertDialog
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -42,12 +46,7 @@ class Settings : Fragment() {
                     Toast.LENGTH_SHORT
                 ).show()
             } else {
-                // Location permission is denied, display a toast message
-                Toast.makeText(
-                    requireContext(),
-                    "Location permission is denied",
-                    Toast.LENGTH_SHORT
-                ).show()
+                showSettingsDialog()
             }
         }
 
@@ -58,6 +57,19 @@ class Settings : Fragment() {
             .setPositiveButton("OK") { dialogInterface: DialogInterface, _: Int ->
                 dialogInterface.dismiss()
                 requestLocationPermission()
+            }
+            .setNegativeButton("Cancel") { dialogInterface: DialogInterface, _: Int ->
+                dialogInterface.dismiss()
+            }
+            .create()
+
+        // Initialize the settings dialog
+        settingsDialog = AlertDialog.Builder(requireContext())
+            .setTitle("Location Permissions")
+            .setMessage("LocoQuest needs your location to provide accurate directions. Please grant location permissions in settings.")
+            .setPositiveButton("Open Settings") { dialogInterface: DialogInterface, _: Int ->
+                dialogInterface.dismiss()
+                openSettings()
             }
             .setNegativeButton("Cancel") { dialogInterface: DialogInterface, _: Int ->
                 dialogInterface.dismiss()
@@ -105,21 +117,53 @@ class Settings : Fragment() {
 
     // Function to request location permission
     private fun requestLocationPermission() {
-        if (hasLocationPermission()) {
-            // Location permission is already granted, display a toast message
-            Toast.makeText(
-                requireContext(),
-                "Location permission is already granted",
-                Toast.LENGTH_SHORT
-            ).show()
-        } else {
-            // Location permission is not granted, request the permission
-            permissionLauncher.launch(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
+        when {
+            shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION) -> {
+                // Permission previously denied by user, show an explanation
+                AlertDialog.Builder(requireContext())
+                    .setTitle("Location Permission")
+                    .setMessage("LocoQuest requires location permission to work properly.")
+                    .setPositiveButton("Grant") { _, _ ->
+                        permissionLauncher.launch(
+                            arrayOf(
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                Manifest.permission.ACCESS_COARSE_LOCATION
+                            )
+                        )
+                    }
+                    .setNegativeButton("Deny") { _, _ ->
+                    }
+                    .show()
+            }
+            else -> {
+                // Permission not yet granted
+                permissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
                 )
-            )
+            }
         }
+    }
+
+    private fun openSettings() {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+        val uri: Uri = Uri.fromParts("package", requireContext().packageName, null)
+        intent.data = uri
+        startActivity(intent)
+    }
+
+    private fun showSettingsDialog() {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Permissions Required")
+            .setMessage("This feature requires location permission. You can grant the permission in the app settings.")
+            .setPositiveButton("Go to Settings") { _, _ ->
+                openSettings()
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
     }
 }
