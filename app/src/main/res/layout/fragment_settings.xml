@@ -13,49 +13,13 @@
         android:textStyle="bold"
         android:padding="16dp" />
 
-    <!-- Divider -->
-    <View
-        android:id="@+id/divider"
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@android:color/darker_gray"
-        android:layout_below="@id/titleTextView" />
-
-    <!-- Precise Location Toggle -->
-    <com.google.android.material.switchmaterial.SwitchMaterial
-        android:id="@+id/preciseLocationToggle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/precise_location"
-        android:padding="16dp"
-        android:layout_below="@id/titleTextView"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginTop="16dp"
-        android:checked="false"
-        tools:ignore="UseSwitchCompatOrMaterialXml,VisualLintButtonSize" />
-
-    <!-- Approximate Location Toggle -->
-    <com.google.android.material.switchmaterial.SwitchMaterial
-        android:id="@+id/approximateLocationToggle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/approximate_location"
-        android:padding="16dp"
-        android:layout_below="@id/preciseLocationToggle"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginTop="16dp"
-        android:checked="false"
-        tools:ignore="UseSwitchCompatOrMaterialXml,VisualLintButtonSize" />
-
     <!-- Request Permissions Button -->
     <Button
         android:id="@+id/requestPermissionsButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/request_permissions"
-        android:layout_below="@id/approximateLocationToggle"
+        android:layout_below="@id/titleTextView"
         android:layout_margin="16dp"
         android:layout_alignParentStart="true"
         android:layout_alignParentEnd="true"
