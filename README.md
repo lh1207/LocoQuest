@@ -3,6 +3,7 @@
 LocoQuest is an Android app that offers an interactive scavenger hunt experience using your device's geolocation capabilities. With LocoQuest, you can:
 
 - Explore new places and take on a unique scavenger hunt by finding hidden treasures
+- Bechmarks utilized by National Geodetric Survey (NGS).
 - Use benchmarks to provide a reference point for mapping and surveying
 - Enjoy a fun and educational way to explore the world around you
 
@@ -17,13 +18,13 @@ Given I've already authorized permissions for the app to use my device's geoloca
 When I open LocoQuest from a clean-state and get sent to the "landing page," also known as the map,
 Then geolocation shall be activated and display my current location on my device, so that I can find my current location and start my scavenger hunt.
 
-Given there is no internet connectivity on my device,
-When I open LocoQuest or the app refreshes,
-Then the app shall display a warning message that alerts me that landmarks may not be up-to-date.
+Given there is a benchmark that I visited on my device,
+When I open my profile on LocoQuest,
+Then the profile side of the app shall display the completed benchmarks.
 
-Given GPS is turned off on my device,
-When I open LocoQuest at any point,
-Then the map should turn darker, and the app should warn me that GPS is not enabled, which will throw off the calculations of the entire app despite the data stored locally on the device.
+Given that I have logged into a profile on the application,
+When I can access it in the profile section of application,
+Then I am able to edit my name within the application.
 
 # UML Class Diagram
 
