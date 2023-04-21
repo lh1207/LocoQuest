@@ -111,7 +111,7 @@ class MainActivity : AppCompatActivity() {
         grantResults: IntArray,
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        home.startLocationUpdates()
+        if(grantResults[0] == 1) home.startLocationUpdates()
     }
 
     /**
