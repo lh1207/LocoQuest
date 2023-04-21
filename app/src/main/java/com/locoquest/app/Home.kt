@@ -3,23 +3,27 @@ package com.locoquest.app
 import BenchmarkService
 import IBenchmarkService
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.location.Location
+import android.location.LocationManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getSystemService
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -42,6 +46,7 @@ import com.locoquest.app.AppModule.Companion.user
 import com.locoquest.app.Converters.Companion.toMarkerOptions
 import com.locoquest.app.dto.Benchmark
 import kotlinx.coroutines.launch
+import java.net.UnknownHostException
 
 class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
 
@@ -50,9 +55,13 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     private var loadingMarkers = false
     private var cameraMovedByUser = false
     private var updateCameraOnLocationUpdate = true
+    private var notifiedUserOfNetwork = false
     private var mapFragment: SupportMapFragment? = null
     private var markerToBenchmark: HashMap<Marker, Benchmark> = HashMap()
     private var benchmarkToMarker: HashMap<Benchmark, Marker> = HashMap()
+    private lateinit var myLocation: FloatingActionButton
+    private lateinit var layersFab: FloatingActionButton
+    private lateinit var layersLayout: LinearLayout
     private lateinit var fusedLocationClient: FusedLocationProviderClient
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,8 +81,26 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
             mapFragment?.onCreate(savedInstanceState)
         else mapFragment?.getMapAsync(this)
 
-        val layersLayout = view.findViewById<LinearLayout>(R.id.layers_layout)
-        val layersFab = view.findViewById<FloatingActionButton>(R.id.layersFab)
+        myLocation = view.findViewById(R.id.my_location)
+        myLocation.setImageResource(if (hasLocationPermissions() && isGpsOn()) R.drawable.my_location else R.drawable.location_disabled)
+        myLocation.setOnClickListener {
+            if(!hasLocationPermissions()){
+                requestLocationPermission()
+                return@setOnClickListener
+            }
+            if(!isGpsOn()){
+                alertUserGps()
+                return@setOnClickListener
+            }
+            stopLocationUpdates()
+            startLocationUpdates()
+            updateCameraWithLastLocation()
+            cameraMovedByUser = false
+            updateCameraOnLocationUpdate = true
+        }
+
+        layersLayout = view.findViewById(R.id.layers_layout)
+        layersFab = view.findViewById(R.id.layersFab)
         layersFab.setOnClickListener { layersLayout.visibility = if(layersLayout.visibility == View.GONE) View.VISIBLE else View.GONE }
 
         val layersClickListener = View.OnClickListener {
@@ -102,26 +129,46 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
 
         return view
     }
+    @SuppressLint("MissingPermission")
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
-        startLocationUpdates()
         map.mapType = mapType()
+        map.setOnMapClickListener {
+            Thread{
+                Thread.sleep(500) // wait for direction btn to hide
+                Handler(Looper.getMainLooper()).post{showLayersFab()}
+            }.start()
+        }
         map.setOnCameraMoveListener {
             loadMarkers()
         }
         map.setOnCameraMoveStartedListener {
             updateCameraOnLocationUpdate = !cameraMovedByUser
             cameraMovedByUser = true
+            if(!updateCameraOnLocationUpdate){
+                stopLocationUpdates()
+                startLocationUpdates(false)
+            }
         }
         map.setOnMarkerClickListener(this)
         map.setOnMyLocationButtonClickListener {
+            if(!hasLocationPermissions()){
+                requestLocationPermission()
+                true
+            }
+            if(!isGpsOn()){
+                alertUserGps()
+                true
+            }
+            stopLocationUpdates()
+            startLocationUpdates()
             updateCameraWithLastLocation()
             cameraMovedByUser = false
             updateCameraOnLocationUpdate = true
             true
         }
 
-        updateCameraWithLastLocation()
+        updateCameraWithLastLocation(false)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -132,7 +179,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     override fun onResume() {
         super.onResume()
         mapFragment?.onResume()
-        startLocationUpdates(false)
+        startLocationUpdates()
         cameraIsMoving = false
     }
 
@@ -153,6 +200,11 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     }
 
     override fun onMarkerClick(marker: Marker): Boolean {
+        hideLayersFab()
+        updateCameraOnLocationUpdate = false
+        cameraMovedByUser = true
+        if(!hasLocationPermissions() || !isGpsOn()) return false
+
         val lastLocation = lastLocation()
         val inProximity = isWithin500Feet(
             marker.position,
@@ -168,18 +220,24 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
                 Thread{AppModule.db?.localUserDAO()?.insert(user)}.start()
                 marker.setIcon(BitmapDescriptorFactory.defaultMarker(HUE))
                 Toast.makeText(context, "Benchmark completed", Toast.LENGTH_SHORT).show()
-            }else{
+            }else {
                 Toast.makeText(context, "Not close enough to complete", Toast.LENGTH_SHORT).show()
             }
         }
-
-        updateCameraOnLocationUpdate = false
-        cameraMovedByUser = true
 
         // Return false to indicate that we have not consumed the event and that we wish
         // for the default behavior to occur (which is for the camera to move such that the
         // marker is centered and for the marker's info window to open, if it has one).
         return false
+    }
+
+    private fun hideLayersFab() {
+        layersFab.visibility = View.GONE
+        layersLayout.visibility = View.GONE
+    }
+
+    private fun showLayersFab(){
+        layersFab.visibility = View.VISIBLE
     }
 
     private fun isWithin500Feet(latlng1: LatLng, latlng2: LatLng): Boolean {
@@ -202,7 +260,15 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
 
     fun loadMarkers(){loadMarkers(false)}
     fun loadMarkers(isUserSwitched: Boolean){
-        if((loadingMarkers && !isUserSwitched)|| googleMap == null) return
+        goToSelectedBenchmark()
+        if(!isOnline()){
+            if(!notifiedUserOfNetwork){
+                Toast.makeText(context, "No network: Can't load markers", Toast.LENGTH_SHORT).show()
+                notifiedUserOfNetwork = true
+            }
+            return
+        }
+        if((loadingMarkers && !isUserSwitched) || googleMap == null) return
         loadingMarkers = true
         val map = googleMap!!
         val benchmarkService: IBenchmarkService = BenchmarkService()
@@ -245,11 +311,12 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
 
                         // Add markers for new benchmarks
                         Handler(Looper.getMainLooper()).post {
-                            goToSelectedBenchmark()
                             for (benchmark in newBenchmarks)
                                 addBenchmarkToMap(benchmark)
                         }
                     }catch (e: ConcurrentModificationException){
+                        Log.e("LoadMarkers", e.toString())
+                    }catch (e: UnknownHostException){
                         Log.e("LoadMarkers", e.toString())
                     }
                     loadingMarkers = false
@@ -300,39 +367,53 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         return marker
     }
 
-    fun startLocationUpdates(){startLocationUpdates(true)}
-    private fun startLocationUpdates(request: Boolean) {
+    fun startLocationUpdates(){
+        startLocationUpdates(true)
+    }
+    private fun startLocationUpdates(tracking: Boolean){
+        myLocation.setImageResource(if (tracking) R.drawable.my_location else R.drawable.my_location_not_tracking)
+        val interval = if (tracking) TRACKING_INTERVAL else STATIC_INTERVAL
+        val fastestInterval = if (tracking) TRACKING_FASTEST_INTERVAL else STATIC_FASTEST_INTERVAL
+        startLocationUpdates(interval, fastestInterval)
+    }
+    @SuppressLint("MissingPermission")
+    private fun startLocationUpdates(interval: Long, fastestInterval: Long) {
+        if (!hasLocationPermissions() || !isGpsOn()) return
+        fusedLocationClient.requestLocationUpdates(
+            createLocationRequest(interval, fastestInterval),
+            locationCallback,
+            Looper.getMainLooper())
+        googleMap?.let { it.isMyLocationEnabled = true }
+    }
+
+    private fun alertUserGps() {
+        AlertDialog.Builder(requireContext())
+            .setMessage("Your GPS seems to be disabled, do you want to enable it?")
+            .setPositiveButton("Yes") { _, _ ->
+                startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+            }.show()
+    }
+
+    private fun isGpsOn() : Boolean{
+        val manager: LocationManager? = getSystemService(requireContext(), LocationManager::class.java)
+        if(manager != null && manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) return true
+        return false
+    }
+
+    private fun hasLocationPermissions() : Boolean {
+        return (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED)
+    }
+    private fun isOnline() : Boolean{
         // Check network connectivity and start location updates accordingly
-        val connectivityManager =
-            getSystemService(requireContext(), ConnectivityManager::class.java) as ConnectivityManager
+        val connectivityManager = getSystemService(requireContext(), ConnectivityManager::class.java) as ConnectivityManager
         val network = connectivityManager.activeNetwork
         val capabilities = connectivityManager.getNetworkCapabilities(network)
 
-        if (capabilities != null && (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || capabilities.hasTransport(
-                NetworkCapabilities.TRANSPORT_CELLULAR
-            ))
-        ) {
-            if (ActivityCompat.checkSelfPermission(
-                    requireContext(),
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                    requireContext(),
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                if(request) requestLocationPermission()
-                return
-            }
-            // Request location updates using fusedLocationClient
-            fusedLocationClient.requestLocationUpdates(createLocationRequest(), locationCallback, Looper.getMainLooper())
-            googleMap?.let { it.isMyLocationEnabled = true }
-        } else {
-            Toast.makeText(
-                context,
-                "Unable to start location updates. Device is offline.",
-                Toast.LENGTH_SHORT
-            ).show()
-        }
+        return (capabilities != null && (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+                || capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)))
     }
 
     private fun stopLocationUpdates() {
@@ -340,41 +421,44 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     }
 
     private fun requestLocationPermission() {
-        if (ContextCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                requireActivity(),
-                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                MainActivity.MY_PERMISSIONS_REQUEST_LOCATION
-            )
-        }
+        ActivityCompat.requestPermissions(
+            requireActivity(),
+            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+            MainActivity.MY_PERMISSIONS_REQUEST_LOCATION
+        )
     }
 
-    private fun createLocationRequest(): LocationRequest {
+    private fun createLocationRequest(interval: Long, fastestInterval: Long): LocationRequest {
         return LocationRequest.create()
             .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-            .setInterval(5000) // Update location every 5 seconds
-            .setFastestInterval(1000) // Update location at least every 1 second
+            .setInterval(interval) // Update location every 5 seconds
+            .setFastestInterval(fastestInterval) // Update location at least every 1 second
     }
 
-    private fun updateCameraWithLastLocation() {
+    private fun updateCameraWithLastLocation(){updateCameraWithLastLocation(true)}
+    private fun updateCameraWithLastLocation(animate: Boolean) {
         val lastLocation = lastLocation()
         if (lastLocation.provider == "" || googleMap == null || cameraIsMoving) return
         cameraMovedByUser = false
         cameraIsMoving = true
-        googleMap?.animateCamera(
-            CameraUpdateFactory.newLatLngZoom(
-                LatLng(lastLocation.latitude, lastLocation.longitude), DEFAULT_ZOOM
-            ), CAMERA_ANIMATION_DURATION, object : CancelableCallback {
-                override fun onFinish() {
-                    loadMarkers()
-                    cameraIsMoving = false
-                }
-                override fun onCancel() { cameraIsMoving = false }
-            })
+        val cameraUpdate = CameraUpdateFactory.newLatLngZoom(LatLng(lastLocation.latitude, lastLocation.longitude), DEFAULT_ZOOM)
+        if(animate) {
+            googleMap?.animateCamera(cameraUpdate, CAMERA_ANIMATION_DURATION,
+                object : CancelableCallback {
+                    override fun onFinish() {
+                        loadMarkers()
+                        cameraIsMoving = false
+                    }
+
+                    override fun onCancel() {
+                        cameraIsMoving = false
+                    }
+                })
+        }else{
+            googleMap?.moveCamera(cameraUpdate)
+            loadMarkers()
+            cameraIsMoving = false
+        }
     }
 
     private val locationCallback = object : LocationCallback() {
@@ -423,5 +507,9 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         private const val HUE = 200f
         private const val DEFAULT_ZOOM = 15f
         private const val CAMERA_ANIMATION_DURATION = 2000
+        private const val TRACKING_INTERVAL = 5000L
+        private const val TRACKING_FASTEST_INTERVAL = 1000L
+        private const val STATIC_INTERVAL = 30000L
+        private const val STATIC_FASTEST_INTERVAL = 10000L
     }
 }

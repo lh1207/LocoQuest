@@ -111,6 +111,7 @@ class MainActivity : AppCompatActivity() {
         grantResults: IntArray,
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if(grantResults.isEmpty()) return
         if(grantResults[0] == 1) home.startLocationUpdates()
     }
 
@@ -227,7 +228,12 @@ class MainActivity : AppCompatActivity() {
     private fun displayUserInfo() {
         auth.currentUser?.let { user ->
             supportActionBar?.let {
-                it.title = if(AppModule.user.displayName == "") user.displayName else AppModule.user.displayName
+                if(AppModule.user.displayName == "") {
+                    AppModule.user.displayName = user.displayName.toString()
+                    Thread { db?.localUserDAO()?.update(AppModule.user) }.start()
+                }
+
+                it.title = user.displayName
 
                 Glide.with(this)
                     .load(user.photoUrl)
