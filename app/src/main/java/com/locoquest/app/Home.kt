@@ -20,6 +20,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -51,19 +52,20 @@ import java.net.UnknownHostException
 class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
 
     private var googleMap: GoogleMap? = null
+    private var selectedMarker: Marker? = null
+    private var mapFragment: SupportMapFragment? = null
     private var cameraIsMoving = false
     private var loadingMarkers = false
     private var cameraMovedByUser = false
-    private var updateCameraOnLocationUpdate = true
     private var notifiedUserOfNetwork = false
-    private var mapFragment: SupportMapFragment? = null
+    private var updateCameraOnLocationUpdate = true
     private var markerToBenchmark: HashMap<Marker, Benchmark> = HashMap()
     private var benchmarkToMarker: HashMap<Benchmark, Marker> = HashMap()
-    private lateinit var myLocation: FloatingActionButton
-    private lateinit var layersFab: FloatingActionButton
+    private lateinit var offlineImg: ImageView
     private lateinit var layersLayout: LinearLayout
+    private lateinit var layersFab: FloatingActionButton
+    private lateinit var myLocation: FloatingActionButton
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private var selectedMarker: Marker? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -129,6 +131,9 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         view.findViewById<ExtendedFloatingActionButton>(R.id.satelliteLayerFab).setOnClickListener(layersClickListener)
         view.findViewById<ExtendedFloatingActionButton>(R.id.terrainLayerFab).setOnClickListener(layersClickListener)
 
+        offlineImg = view.findViewById(R.id.offline_img)
+        updateNetworkStatus()
+
         return view
     }
     @SuppressLint("MissingPermission")
@@ -168,6 +173,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         super.onResume()
         mapFragment?.onResume()
         if(hasLocationPermissions() && isGpsOn()) startLocationUpdates()
+        updateNetworkStatus()
         cameraIsMoving = false
     }
 
@@ -454,6 +460,10 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
             loadMarkers()
             cameraIsMoving = false
         }
+    }
+
+    private fun updateNetworkStatus(){
+        offlineImg.visibility = if(isOnline()) View.GONE else View.VISIBLE
     }
 
     private val locationCallback = object : LocationCallback() {

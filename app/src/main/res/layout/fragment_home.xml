@@ -15,6 +15,7 @@
     <ImageView
         android:id="@+id/offline_img"
         android:src="@drawable/offline"
+        app:tint="@color/black"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_margin="16dp"
