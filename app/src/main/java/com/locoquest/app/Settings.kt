@@ -1,6 +1,7 @@
 package com.locoquest.app
 
 import android.Manifest
+import android.content.DialogInterface
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -10,11 +11,13 @@ import android.widget.Button
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 
 class Settings : Fragment() {
     private lateinit var permissionLauncher: ActivityResultLauncher<Array<String>>
+    private lateinit var rationaleDialog: AlertDialog
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -33,12 +36,33 @@ class Settings : Fragment() {
         ) { permissions ->
             if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true) {
                 // Location permission is granted, display a toast message
-                Toast.makeText(requireContext(), "Location permission is granted", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    requireContext(),
+                    "Location permission is granted",
+                    Toast.LENGTH_SHORT
+                ).show()
             } else {
                 // Location permission is denied, display a toast message
-                Toast.makeText(requireContext(), "Location permission is denied", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    requireContext(),
+                    "Location permission is denied",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
+
+        // Initialize the rationale dialog
+        rationaleDialog = AlertDialog.Builder(requireContext())
+            .setTitle("Location Permissions")
+            .setMessage("LocoQuest needs your location to provide accurate directions. Please grant location permissions.")
+            .setPositiveButton("OK") { dialogInterface: DialogInterface, _: Int ->
+                dialogInterface.dismiss()
+                requestLocationPermission()
+            }
+            .setNegativeButton("Cancel") { dialogInterface: DialogInterface, _: Int ->
+                dialogInterface.dismiss()
+            }
+            .create()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -51,10 +75,19 @@ class Settings : Fragment() {
         requestPermissionsButton.setOnClickListener {
             if (hasLocationPermission()) {
                 // Location permission is already granted, display a toast message
-                Toast.makeText(requireContext(), "Location permission is already granted", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    requireContext(),
+                    "Location permission is already granted",
+                    Toast.LENGTH_SHORT
+                ).show()
             } else {
                 // Location permission is not granted, request the permission
-                requestLocationPermission()
+                if (shouldShowRequestPermissionRationale()) {
+                    // Show rationale dialog before requesting the permission
+                    rationaleDialog.show()
+                } else {
+                    requestLocationPermission()
+                }
             }
         }
     }
@@ -66,11 +99,27 @@ class Settings : Fragment() {
         ) == PackageManager.PERMISSION_GRANTED
     }
 
+    private fun shouldShowRequestPermissionRationale(): Boolean {
+        return shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)
+    }
+
     // Function to request location permission
     private fun requestLocationPermission() {
-        permissionLauncher.launch(arrayOf(
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        ))
+        if (hasLocationPermission()) {
+            // Location permission is already granted, display a toast message
+            Toast.makeText(
+                requireContext(),
+                "Location permission is already granted",
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            // Location permission is not granted, request the permission
+            permissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
     }
 }
