@@ -54,11 +54,11 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     private var googleMap: GoogleMap? = null
     private var selectedMarker: Marker? = null
     private var mapFragment: SupportMapFragment? = null
+    private var tracking = true
+    private var stopTracking = false
     private var cameraIsMoving = false
     private var loadingMarkers = false
-    private var cameraMovedByUser = false
-    private var notifiedUserOfNetwork = false
-    private var updateCameraOnLocationUpdate = true
+    private var notifyUserOfNetwork = true
     private var markerToBenchmark: HashMap<Marker, Benchmark> = HashMap()
     private var benchmarkToMarker: HashMap<Benchmark, Marker> = HashMap()
     private lateinit var offlineImg: ImageView
@@ -99,10 +99,9 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
                 return@setOnClickListener
             }
             stopLocationUpdates()
-            startLocationUpdates()
+            startLocationUpdates(true)
             updateCameraWithLastLocation()
-            cameraMovedByUser = false
-            updateCameraOnLocationUpdate = true
+            stopTracking = false
         }
 
         layersLayout = view.findViewById(R.id.layers_layout)
@@ -155,16 +154,16 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         }
         map.setOnCameraMoveStartedListener {
             layersLayout.visibility = View.GONE
-            updateCameraOnLocationUpdate = !cameraMovedByUser
-            cameraMovedByUser = true
-            if(!updateCameraOnLocationUpdate){
+            tracking = !stopTracking
+            stopTracking = true
+            if(!tracking){
                 stopLocationUpdates()
-                startLocationUpdates(false)
+                startLocationUpdates(tracking)
             }
         }
 
         updateCameraWithLastLocation(false)
-        if(hasLocationPermissions() && isGpsOn()) startLocationUpdates()
+        if(hasLocationPermissions() && isGpsOn()) startLocationUpdates(tracking)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -176,9 +175,10 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         super.onResume()
         mapFragment?.onResume()
         if(hasLocationPermissions() && isGpsOn())
-            startLocationUpdates(updateCameraOnLocationUpdate)
+            startLocationUpdates(tracking)
         updateNetworkStatus()
         cameraIsMoving = false
+        notifyUserOfNetwork = true
     }
 
     override fun onPause() {
@@ -200,8 +200,8 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     override fun onMarkerClick(marker: Marker): Boolean {
         selectedMarker = marker
         hideLayersFab()
-        updateCameraOnLocationUpdate = false
-        cameraMovedByUser = true
+        tracking = false
+        stopTracking = true
         if(!hasLocationPermissions() || !isGpsOn()) return false
 
         val lastLocation = lastLocation()
@@ -261,9 +261,9 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     fun loadMarkers(isUserSwitched: Boolean){
         goToSelectedBenchmark()
         if(!isOnline()){
-            if(!notifiedUserOfNetwork){
+            if(notifyUserOfNetwork){
                 Toast.makeText(context, "No network: Can't load markers", Toast.LENGTH_SHORT).show()
-                notifiedUserOfNetwork = true
+                notifyUserOfNetwork = false
             }
             return
         }
@@ -333,8 +333,8 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     private fun goToSelectedBenchmark() {
         if (selectedBenchmark == null) return
 
-        updateCameraOnLocationUpdate = false
-        cameraMovedByUser = true
+        tracking = false
+        stopTracking = true
         googleMap?.moveCamera(
             CameraUpdateFactory.newLatLngZoom(
                 LatLng(
@@ -367,11 +367,12 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     }
 
     fun startLocationUpdates(){
-        startLocationUpdates(true)
+        startLocationUpdates(tracking)
     }
 
     @SuppressLint("MissingPermission")
     private fun startLocationUpdates(tracking: Boolean) {
+        this.tracking = tracking
         myLocation.setImageResource(
             if (!hasLocationPermissions() || !isGpsOn()) R.drawable.location_disabled
             else if (tracking) R.drawable.my_location
@@ -444,7 +445,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     fun updateCameraWithLastLocation(animate: Boolean) {
         val lastLocation = lastLocation()
         if (lastLocation.provider == "" || googleMap == null || cameraIsMoving) return
-        cameraMovedByUser = false
+        stopTracking = false
         cameraIsMoving = true
         val cameraUpdate = CameraUpdateFactory.newLatLngZoom(LatLng(lastLocation.latitude, lastLocation.longitude), DEFAULT_ZOOM)
         if(animate) {
@@ -474,7 +475,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         override fun onLocationResult(locationResult: LocationResult) {
             locationResult.lastLocation.let { location ->
                 lastLocation(location)
-                if (!updateCameraOnLocationUpdate) return
+                if (!tracking) return
                 updateCameraWithLastLocation()
             }
         }
