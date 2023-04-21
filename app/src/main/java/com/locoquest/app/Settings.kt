@@ -24,6 +24,23 @@ class Settings : Fragment() {
         return inflater.inflate(R.layout.fragment_settings, container, false)
     }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        // Initialize the permission launcher
+        permissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions ->
+            if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true) {
+                // Location permission is granted, display a toast message
+                Toast.makeText(requireContext(), "Location permission is granted", Toast.LENGTH_SHORT).show()
+            } else {
+                // Location permission is denied, display a toast message
+                Toast.makeText(requireContext(), "Location permission is denied", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -40,8 +57,7 @@ class Settings : Fragment() {
                 requestLocationPermission()
             }
         }
-        }
-
+    }
 
     private fun hasLocationPermission(): Boolean {
         return ContextCompat.checkSelfPermission(
