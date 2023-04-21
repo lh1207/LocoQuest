@@ -151,24 +151,9 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
             }
         }
         map.setOnMarkerClickListener(this)
-        map.setOnMyLocationButtonClickListener {
-            if(!hasLocationPermissions()){
-                requestLocationPermission()
-                true
-            }
-            if(!isGpsOn()){
-                alertUserGps()
-                true
-            }
-            stopLocationUpdates()
-            startLocationUpdates()
-            updateCameraWithLastLocation()
-            cameraMovedByUser = false
-            updateCameraOnLocationUpdate = true
-            true
-        }
 
         updateCameraWithLastLocation(false)
+        if(hasLocationPermissions() && isGpsOn()) startLocationUpdates()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -179,7 +164,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     override fun onResume() {
         super.onResume()
         mapFragment?.onResume()
-        startLocationUpdates()
+        if(hasLocationPermissions() && isGpsOn()) startLocationUpdates()
         cameraIsMoving = false
     }
 
@@ -378,7 +363,6 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     }
     @SuppressLint("MissingPermission")
     private fun startLocationUpdates(interval: Long, fastestInterval: Long) {
-        if (!hasLocationPermissions() || !isGpsOn()) return
         fusedLocationClient.requestLocationUpdates(
             createLocationRequest(interval, fastestInterval),
             locationCallback,
@@ -401,9 +385,12 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     }
 
     private fun hasLocationPermissions() : Boolean {
+        val fine = ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        val course = ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
         return (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
+                || ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED)
     }
     private fun isOnline() : Boolean{
@@ -423,7 +410,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     private fun requestLocationPermission() {
         ActivityCompat.requestPermissions(
             requireActivity(),
-            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+            arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION),
             MainActivity.MY_PERMISSIONS_REQUEST_LOCATION
         )
     }

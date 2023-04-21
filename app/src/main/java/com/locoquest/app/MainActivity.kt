@@ -7,15 +7,18 @@ remote server, and authenticating with Firebase.
  */
 package com.locoquest.app
 
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.IntentSender
 import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -112,7 +115,16 @@ class MainActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if(grantResults.isEmpty()) return
-        if(grantResults[0] == 1) home.startLocationUpdates()
+        if(grantResults[0] >= 0) home.startLocationUpdates()
+        else if(grantResults[0] == -1 && grantResults[1] == -1){
+            AlertDialog.Builder(this)
+                .setTitle("Location Permissions")
+                .setMessage("LocoQuest needs your location to provide accurate directions. Please grant location permissions in settings.")
+                .setPositiveButton("Open Settings") { _, _ ->
+                    startActivity(Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.fromParts("package", packageName, null)))
+                }.show()
+        }
     }
 
     /**
