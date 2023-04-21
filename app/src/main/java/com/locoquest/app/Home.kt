@@ -85,7 +85,10 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         else mapFragment?.getMapAsync(this)
 
         myLocation = view.findViewById(R.id.my_location)
-        myLocation.setImageResource(if (hasLocationPermissions() && isGpsOn()) R.drawable.my_location else R.drawable.location_disabled)
+        myLocation.setImageResource(
+            if (hasLocationPermissions() && isGpsOn()) R.drawable.my_location_not_tracking
+            else R.drawable.location_disabled
+        )
         myLocation.setOnClickListener {
             if(!hasLocationPermissions()){
                 requestLocationPermission()
@@ -172,7 +175,8 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     override fun onResume() {
         super.onResume()
         mapFragment?.onResume()
-        if(hasLocationPermissions() && isGpsOn()) startLocationUpdates()
+        if(hasLocationPermissions() && isGpsOn())
+            startLocationUpdates(updateCameraOnLocationUpdate)
         updateNetworkStatus()
         cameraIsMoving = false
     }
@@ -384,7 +388,6 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         if(tracking) googleMap?.let {
             it.isMyLocationEnabled = true
             it.uiSettings.isMyLocationButtonEnabled = false
-            updateCameraWithLastLocation(false)
         }
     }
 
@@ -438,7 +441,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     }
 
     private fun updateCameraWithLastLocation(){updateCameraWithLastLocation(true)}
-    private fun updateCameraWithLastLocation(animate: Boolean) {
+    fun updateCameraWithLastLocation(animate: Boolean) {
         val lastLocation = lastLocation()
         if (lastLocation.provider == "" || googleMap == null || cameraIsMoving) return
         cameraMovedByUser = false

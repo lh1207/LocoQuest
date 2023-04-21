@@ -115,7 +115,10 @@ class MainActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if(grantResults.isEmpty()) return
-        if(grantResults[0] == 0) home.startLocationUpdates()
+        if(grantResults[0] == 0) {
+            home.startLocationUpdates()
+            home.updateCameraWithLastLocation(false)
+        }
         else if(grantResults[0] == -1 && grantResults[1] == -1){
             AlertDialog.Builder(this)
                 .setTitle("Location Permissions")
