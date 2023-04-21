@@ -367,7 +367,10 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
             createLocationRequest(interval, fastestInterval),
             locationCallback,
             Looper.getMainLooper())
-        googleMap?.let { it.isMyLocationEnabled = true }
+        googleMap?.let {
+            it.isMyLocationEnabled = true
+            it.uiSettings.isMyLocationButtonEnabled = false
+        }
     }
 
     private fun alertUserGps() {
@@ -385,9 +388,6 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     }
 
     private fun hasLocationPermissions() : Boolean {
-        val fine = ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-        val course = ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-
         return (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED
                 || ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
