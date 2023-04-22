@@ -285,7 +285,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         return feet <= 500.0
     }
 
-    fun loadMarkers(){loadMarkers(false)}
+    private fun loadMarkers(){loadMarkers(false)}
     fun loadMarkers(isUserSwitched: Boolean){
         Log.d("tracker", "loading markers")
         goToSelectedBenchmark()
@@ -316,6 +316,11 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
                             return@Thread
                         }
 
+                        if(isUserSwitched)
+                            Handler(Looper.getMainLooper()).post {
+                                markerToBenchmark.keys.forEach { it.setIcon(BitmapDescriptorFactory.defaultMarker()) }
+                            }
+
                         val newBenchmarks = mutableListOf<Benchmark>()
                         val existingBenchmarks = mutableListOf<Benchmark>()
 
@@ -324,6 +329,14 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
                             if (benchmarkToMarker.keys.contains(benchmark))
                                 existingBenchmarks.add(benchmark)
                             else newBenchmarks.add(benchmark)
+
+                        if(isUserSwitched) {
+                            existingBenchmarks.forEach {
+                                if (user.benchmarks.contains(it.pid)) Handler(Looper.getMainLooper()).post {
+                                    benchmarkToMarker[it]?.setIcon(BitmapDescriptorFactory.defaultMarker(HUE))
+                                }
+                            }
+                        }
 
                         // Remove markers for deleted benchmarks
                         val iterator = benchmarkToMarker.iterator()
