@@ -45,9 +45,9 @@ class Settings : Fragment() {
                     "Location permission is granted",
                     Toast.LENGTH_SHORT
                 ).show()
-            } else {
+            }/* else {
                 showSettingsDialog()
-            }
+            }*/
         }
 
         // Initialize the rationale dialog
