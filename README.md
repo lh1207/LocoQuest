@@ -11,7 +11,7 @@ Explore LocoQuest and start your adventure today!
 
 # Storyboard
 
-<img width="712" alt="image" src="https://user-images.githubusercontent.com/54557245/233698621-6d6f5423-ee99-494f-a1e2-b2f72ee3d5ef.png">
+![image](https://user-images.githubusercontent.com/100445409/233758465-22fc42db-839b-4080-a696-f7eb9cef23b8.png)
 
 # Functional Requirements
 Given I've already authorized permissions for the app to use my device's geolocation capabilities within Android,
