@@ -87,7 +87,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
 
         mapFragment?.view?.setOnTouchListener { _, _ ->
             Log.d("tracker", "map fragment touched")
-            tracking = false
+            updateTrackingStatus(false)
             false
         }
 
@@ -106,9 +106,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
                 alertUserGps()
                 return@setOnClickListener
             }
-            tracking = true
-            stopLocationUpdates()
-            startLocationUpdates()
+            updateTrackingStatus(true)
             updateCameraWithLastLocation()
             Log.d("tracker", "end of my location click fun")
         }
@@ -168,17 +166,17 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
                 Handler(Looper.getMainLooper()).post{showLayersFab()}
             }.start()
         }
-        var wasTracking = tracking
+        //var wasTracking = tracking
         map.setOnCameraMoveStartedListener {
             Log.d("tracker", "camera started moving: tracking:$tracking")
             layersLayout.visibility = View.GONE
-            tracking = cameraIsBeingMoved
-            if(!tracking && wasTracking){
+            updateTrackingStatus(cameraIsBeingMoved)
+            /*if(!tracking && wasTracking){
                 Log.d("tracker", "restarting location updates")
                 stopLocationUpdates()
                 startLocationUpdates(tracking)
-            }
-            wasTracking = tracking
+            }*/
+            //wasTracking = tracking
             Log.d("tracker", "end of moving fun: tracking:$tracking")
         }
 
@@ -186,7 +184,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
             Log.d("tracker", "initializing map camera")
             updateCameraWithLastLocation(false)
         }
-        if(hasLocationPermissions() && isGpsOn()) startLocationUpdates(tracking)
+        if(hasLocationPermissions() && isGpsOn()) startLocationUpdates()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -200,7 +198,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         Log.d("tracker", "resuming")
         mapFragment?.onResume()
         if(hasLocationPermissions() && isGpsOn())
-            startLocationUpdates(tracking)
+            startLocationUpdates()
         updateNetworkStatus()
         cameraIsBeingMoved = false
         notifyUserOfNetwork = true
@@ -229,7 +227,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         Log.d("tracker", "marker clicked on")
         selectedMarker = marker
         hideLayersFab()
-        tracking = false
+        updateTrackingStatus(false)
         if(!hasLocationPermissions() || !isGpsOn()) return false
 
         val lastLocation = lastLocation()
@@ -256,6 +254,15 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         // for the default behavior to occur (which is for the camera to move such that the
         // marker is centered and for the marker's info window to open, if it has one).
         return false
+    }
+
+    private fun updateTrackingStatus(tracking: Boolean){
+        this.tracking = tracking
+        myLocation.setImageResource(
+            if (!hasLocationPermissions() || !isGpsOn()) R.drawable.location_disabled
+            else if (tracking) R.drawable.my_location
+            else R.drawable.my_location_not_tracking
+        )
     }
 
     private fun hideLayersFab() {
@@ -413,28 +420,25 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         return marker
     }
 
-    fun startLocationUpdates(){
-        startLocationUpdates(tracking)
-    }
-
     @SuppressLint("MissingPermission")
-    private fun startLocationUpdates(tracking: Boolean) {
+    fun startLocationUpdates() {
         Log.d("tracker", "starting location updates: tracking:$tracking")
         //this.tracking = tracking
-        myLocation.setImageResource(
+        /*myLocation.setImageResource(
             if (!hasLocationPermissions() || !isGpsOn()) R.drawable.location_disabled
             else if (tracking) R.drawable.my_location
             else R.drawable.my_location_not_tracking
-        )
-        val interval = if (tracking) TRACKING_INTERVAL else STATIC_INTERVAL
-        val fastestInterval = if (tracking) TRACKING_FASTEST_INTERVAL else STATIC_FASTEST_INTERVAL
+        )*/
+        //val interval = if (tracking) TRACKING_INTERVAL else STATIC_INTERVAL
+        //val fastestInterval = if (tracking) TRACKING_FASTEST_INTERVAL else STATIC_FASTEST_INTERVAL
 
         fusedLocationClient.requestLocationUpdates(
-            createLocationRequest(interval, fastestInterval),
+            createLocationRequest(TRACKING_INTERVAL, TRACKING_FASTEST_INTERVAL),
             locationCallback,
             Looper.getMainLooper())
 
-        if(tracking) googleMap?.let {
+        //if(tracking)
+        googleMap?.let {
             it.isMyLocationEnabled = true
             it.uiSettings.isMyLocationButtonEnabled = false
         }
@@ -498,7 +502,19 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         cameraIsBeingMoved = true
         val cameraUpdate = CameraUpdateFactory.newLatLngZoom(LatLng(lastLocation.latitude, lastLocation.longitude), DEFAULT_ZOOM)
         if(animate) {
-            googleMap?.animateCamera(cameraUpdate)
+            googleMap?.animateCamera(cameraUpdate, CAMERA_ANIMATION_DURATION,
+                object : CancelableCallback {
+                    override fun onFinish() {
+                        cameraIsBeingMoved = false
+                        loadMarkers()
+                    }
+
+                    override fun onCancel() {
+                        cameraIsBeingMoved = false
+                        updateTrackingStatus(false)
+                        loadMarkers()
+                    }
+                })
         }else{
             googleMap?.moveCamera(cameraUpdate)
             Log.d("tracker", "camera moved, loading markers")
@@ -562,5 +578,6 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         private const val TRACKING_FASTEST_INTERVAL = 1000L
         private const val STATIC_INTERVAL = 30000L
         private const val STATIC_FASTEST_INTERVAL = 10000L
+        private const val CAMERA_ANIMATION_DURATION = 2000
     }
 }
