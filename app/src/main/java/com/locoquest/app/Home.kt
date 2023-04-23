@@ -163,7 +163,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
             layersLayout.visibility = View.GONE
             Thread{
                 Thread.sleep(500) // wait for direction btn to hide
-                Handler(Looper.getMainLooper()).post{showLayersFab()}
+                Handler(Looper.getMainLooper()).post{layersFab.visibility = View.VISIBLE}
             }.start()
         }
         //var wasTracking = tracking
@@ -171,12 +171,6 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
             Log.d("tracker", "camera started moving: tracking:$tracking")
             layersLayout.visibility = View.GONE
             updateTrackingStatus(cameraIsBeingMoved)
-            /*if(!tracking && wasTracking){
-                Log.d("tracker", "restarting location updates")
-                stopLocationUpdates()
-                startLocationUpdates(tracking)
-            }*/
-            //wasTracking = tracking
             Log.d("tracker", "end of moving fun: tracking:$tracking")
         }
 
@@ -226,7 +220,8 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     override fun onMarkerClick(marker: Marker): Boolean {
         Log.d("tracker", "marker clicked on")
         selectedMarker = marker
-        hideLayersFab()
+        layersFab.visibility = View.GONE
+        layersLayout.visibility = View.GONE
         updateTrackingStatus(false)
         if(!hasLocationPermissions() || !isGpsOn()) return false
 
@@ -263,15 +258,6 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
             else if (tracking) R.drawable.my_location
             else R.drawable.my_location_not_tracking
         )
-    }
-
-    private fun hideLayersFab() {
-        layersFab.visibility = View.GONE
-        layersLayout.visibility = View.GONE
-    }
-
-    private fun showLayersFab(){
-        layersFab.visibility = View.VISIBLE
     }
 
     private fun isWithin500Feet(latlng1: LatLng, latlng2: LatLng): Boolean {
@@ -337,6 +323,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
                                 existingBenchmarks.add(benchmark)
                             else newBenchmarks.add(benchmark)
 
+                        // Update marker colors after user switch
                         if(isUserSwitched) {
                             existingBenchmarks.forEach {
                                 if (user.benchmarks.contains(it.pid)) Handler(Looper.getMainLooper()).post {
@@ -423,21 +410,12 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     @SuppressLint("MissingPermission")
     fun startLocationUpdates() {
         Log.d("tracker", "starting location updates: tracking:$tracking")
-        //this.tracking = tracking
-        /*myLocation.setImageResource(
-            if (!hasLocationPermissions() || !isGpsOn()) R.drawable.location_disabled
-            else if (tracking) R.drawable.my_location
-            else R.drawable.my_location_not_tracking
-        )*/
-        //val interval = if (tracking) TRACKING_INTERVAL else STATIC_INTERVAL
-        //val fastestInterval = if (tracking) TRACKING_FASTEST_INTERVAL else STATIC_FASTEST_INTERVAL
 
         fusedLocationClient.requestLocationUpdates(
             createLocationRequest(TRACKING_INTERVAL, TRACKING_FASTEST_INTERVAL),
             locationCallback,
             Looper.getMainLooper())
 
-        //if(tracking)
         googleMap?.let {
             it.isMyLocationEnabled = true
             it.uiSettings.isMyLocationButtonEnabled = false
@@ -576,8 +554,6 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         private const val DEFAULT_ZOOM = 15f
         private const val TRACKING_INTERVAL = 5000L
         private const val TRACKING_FASTEST_INTERVAL = 1000L
-        private const val STATIC_INTERVAL = 30000L
-        private const val STATIC_FASTEST_INTERVAL = 10000L
         private const val CAMERA_ANIMATION_DURATION = 2000
     }
 }
