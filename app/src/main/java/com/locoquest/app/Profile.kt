@@ -1,11 +1,13 @@
 package com.locoquest.app
 
 import android.app.AlertDialog
+import android.content.IntentSender
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.View.OnClickListener
@@ -16,6 +18,7 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.setPadding
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -25,20 +28,40 @@ import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.bumptech.glide.request.target.CustomTarget
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
+import com.locoquest.app.AppModule.Companion.guest
 import com.locoquest.app.AppModule.Companion.user
+import com.locoquest.app.dto.Benchmark
 import com.locoquest.app.dto.User
 
 
-class Profile : Fragment(), OnLongClickListener, OnClickListener {
+class Profile(private val profileListener: ProfileListener) : Fragment(), OnLongClickListener, OnClickListener {
 
+    interface ProfileListener {
+        fun onBenchmarkClicked(benchmark: Benchmark)
+        fun onLogin()
+        fun onSignOut()
+    }
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: BenchmarkAdapter
+    private lateinit var signBtn: Button
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         val view = inflater.inflate(R.layout.fragment_profile, container, false)
+
+        signBtn = view.findViewById(R.id.sign_in_out_btn)
+        signBtn.text = if(user == guest) getString(R.string.login) else getString(R.string.sign_out)
+        signBtn.setOnClickListener{
+            if(user == guest){
+                profileListener.onLogin()
+            }else{
+                profileListener.onSignOut()
+            }
+        }
 
         recyclerView = view.findViewById(R.id.benchmarks)
         recyclerView.layoutManager = LinearLayoutManager(context)
@@ -114,7 +137,6 @@ class Profile : Fragment(), OnLongClickListener, OnClickListener {
     override fun onClick(view: View?) {
         val pidT = view?.findViewById<TextView>(R.id.pid)?.text.toString()
         val pid = pidT.substring(0, pidT.length-1)
-        Home.selectedBenchmark = user.benchmarks[pid]
-        activity?.findViewById<BottomNavigationView>(R.id.bottomNavigationView)?.selectedItemId = R.id.home
+        if(user.benchmarks.containsKey(pid)) profileListener.onBenchmarkClicked(user.benchmarks[pid]!!)
     }
 }

@@ -1,6 +1,8 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/rounded_corners_bg"
+    android:layout_margin="12dp"
     xmlns:tools="http://schemas.android.com/tools">
 
     <RelativeLayout
@@ -9,12 +11,20 @@
         <!-- Title -->
         <TextView
             android:id="@+id/titleTextView"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/profile_text"
             android:textSize="24sp"
             android:textStyle="bold"
             android:padding="16dp" />
+
+        <Button
+            android:id="@+id/sign_in_out_btn"
+            android:text="@string/login"
+            android:layout_margin="8dp"
+            android:layout_alignParentEnd="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
 
         <ImageView
             android:id="@+id/profileImageView"

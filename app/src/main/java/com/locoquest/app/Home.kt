@@ -490,7 +490,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
                     override fun onCancel() {
                         cameraIsBeingMoved = false
                         updateTrackingStatus(false)
-                        loadMarkers()
+                        //loadMarkers()
                     }
                 })
         }else{

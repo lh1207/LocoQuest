@@ -7,7 +7,7 @@ remote server, and authenticating with Firebase.
  */
 package com.locoquest.app
 
-import android.content.DialogInterface
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.IntentSender
 import android.graphics.drawable.Drawable
@@ -18,10 +18,10 @@ import android.os.Looper
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.FrameLayout
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.Fragment
 import androidx.room.Room
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
@@ -29,10 +29,8 @@ import com.bumptech.glide.request.target.CustomTarget
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.SignInClient
-import com.google.android.gms.common.SignInButton
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
@@ -41,42 +39,26 @@ import com.locoquest.app.AppModule.Companion.db
 import com.locoquest.app.AppModule.Companion.guest
 import com.locoquest.app.AppModule.Companion.user
 import com.locoquest.app.dao.BenchmarkDatabase
+import com.locoquest.app.dto.Benchmark
 import com.locoquest.app.dto.User
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), Profile.ProfileListener {
 
     private val auth = FirebaseAuth.getInstance()
     private lateinit var oneTapClient: SignInClient
     private lateinit var signUpRequest: BeginSignInRequest
     private lateinit var menu: Menu
-    private lateinit var bottomNav: BottomNavigationView
     private var home: Home = Home()
+    private var profile: Profile? = null
     private var switchingUser = false
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        loadFragment(home)
-
-        bottomNav = findViewById(R.id.bottomNavigationView)
-        bottomNav.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.home -> {
-                    loadFragment(home)
-                }
-                R.id.profile -> {
-                    loadFragment(Profile())
-                }
-                R.id.settings -> {
-                    loadFragment(Settings())
-                }
-                else -> {
-                }
-            }
-            true
-        }
+        supportFragmentManager.beginTransaction().replace(R.id.home_container, home).commit()
 
         // Firebase Sign-in
         oneTapClient = Identity.getSignInClient(this)
@@ -199,10 +181,12 @@ class MainActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.menu_item_account -> {
-                if (auth.currentUser == null) {
-                    login()
+                if (profile == null) {
+                    profile = Profile(this)
+                    supportFragmentManager.beginTransaction().replace(R.id.profile_container, profile!!).commit()
                 } else {
-                    signOut()
+                    supportFragmentManager.beginTransaction().remove(profile!!).commit()
+                    profile = null
                 }
                 true
             }
@@ -210,36 +194,48 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Function: login
-     * Description: Private function to handle user login.
-     */
-    private fun login() {
+    override fun onBenchmarkClicked(benchmark: Benchmark) {
+        if(profile == null) return
+        Home.selectedBenchmark = benchmark
+        home.loadMarkers(false)
+        supportFragmentManager.beginTransaction().remove(profile!!).commit()
+        profile = null
+    }
+
+    override fun onLogin() {
         try {
             oneTapClient.beginSignIn(signUpRequest)
                 .addOnSuccessListener(this) { result ->
                     try {
                         startIntentSenderForResult(
-                            result.pendingIntent.intentSender, REQ_ONE_TAP,
+                            result.pendingIntent.intentSender, MainActivity.REQ_ONE_TAP,
                             null, 0, 0, 0
                         )
                     } catch (e: IntentSender.SendIntentException) {
-                        Log.e(TAG, "Couldn't start One Tap UI: ${e.localizedMessage}")
+                        Log.e(MainActivity.TAG, "Couldn't start One Tap UI: ${e.localizedMessage}")
                     }
                 }
                 .addOnFailureListener(this) { e ->
                     // No Google Accounts found. Just continue presenting the signed-out UI.
-                    e.localizedMessage?.let { it1 -> Log.d(TAG, it1) }
+                    e.localizedMessage?.let { it1 -> Log.d(MainActivity.TAG, it1) }
                 }
         } catch (ex: java.lang.Exception) {
-            ex.localizedMessage?.let { Log.d(TAG, it) }
+            ex.localizedMessage?.let { Log.d(MainActivity.TAG, it) }
         }
     }
 
-    /**
-     * Function: displayUserInfo
-     * Description: Private function to display user information.
-     */
+    override fun onSignOut() {
+        Firebase.auth.signOut()
+        supportActionBar?.let {
+            it.title = "LocoQuest"
+            menu.findItem(R.id.menu_item_account).icon =
+                ContextCompat.getDrawable(this, R.drawable.account)
+
+            user = guest
+            switchUser()
+        }
+    }
+
     private fun displayUserInfo() {
         auth.currentUser?.let { user ->
             supportActionBar?.let {
@@ -267,64 +263,29 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Function: signOut
-     * Description: Private function to handle user sign out.
-     */
-    private fun signOut() {
-        Firebase.auth.signOut()
-        supportActionBar?.let {
-            it.title = "LocoQuest"
-            menu.findItem(R.id.menu_item_account).icon =
-                ContextCompat.getDrawable(this, R.drawable.account)
-
-            user = guest
-            switchUser()
-        }
-    }
-
     private fun switchUser(){
         if(!switchingUser)
             Thread{
                 switchingUser = true
                 val userDao = db!!.localUserDAO()
                 val tmpUser = userDao.getUser(user.uid)
+
                 if(tmpUser == null) {
                     userDao.insert(user)
                 }else user = tmpUser
+
                 Handler(Looper.getMainLooper()).post{
                     supportActionBar?.title = user.displayName
-                    when(bottomNav.selectedItemId){
-                        R.id.home -> home.loadMarkers(true)
-                        R.id.profile -> loadFragment(Profile())
+                    home.loadMarkers(true)
+                    if(profile != null){
+                        /*profile = Profile(this)
+                        supportFragmentManager.beginTransaction().replace(R.id.profile_container, profile!!).commit()*/
+                        supportFragmentManager.beginTransaction().remove(profile!!).commit()
+                        profile = null
                     }
                 }
                 switchingUser = false
             }.start()
-    }
-
-    private fun loadFragment(fragment: Fragment) {
-        when (fragment) {
-            is Home -> {
-                if(fragment.isAdded) return
-                supportFragmentManager.beginTransaction()
-                    .add(R.id.container, fragment, "HomeFragment")
-                    .show(fragment)
-                    .commit()
-            }
-            is Profile -> {
-                supportFragmentManager.beginTransaction()
-                    .replace(R.id.container, fragment)
-                    .addToBackStack(null)
-                    .commit()
-            }
-            is Settings -> {
-                supportFragmentManager.beginTransaction()
-                    .replace(R.id.container, fragment)
-                    .addToBackStack(null)
-                    .commit()
-            }
-        }
     }
 
     companion object {
