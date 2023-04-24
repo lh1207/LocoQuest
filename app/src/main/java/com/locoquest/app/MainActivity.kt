@@ -18,7 +18,6 @@ import android.os.Looper
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.FrameLayout
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -38,7 +37,7 @@ import com.google.firebase.ktx.Firebase
 import com.locoquest.app.AppModule.Companion.db
 import com.locoquest.app.AppModule.Companion.guest
 import com.locoquest.app.AppModule.Companion.user
-import com.locoquest.app.dao.BenchmarkDatabase
+import com.locoquest.app.dao.DB
 import com.locoquest.app.dto.Benchmark
 import com.locoquest.app.dto.User
 
@@ -75,7 +74,7 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
             .build()
 
         Thread{
-            db = Room.databaseBuilder(this, BenchmarkDatabase::class.java, "db")
+            db = Room.databaseBuilder(this, DB::class.java, "db")
                 .fallbackToDestructiveMigration().build()
             if (auth.currentUser != null)
                 user = User(auth.currentUser!!.uid)

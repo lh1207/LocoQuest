@@ -9,7 +9,7 @@ import com.locoquest.app.dto.User
 
 @Database(entities = [Benchmark::class, User::class], version = 2)
 @TypeConverters(Converters::class)
-abstract class BenchmarkDatabase : RoomDatabase() {
+abstract class DB : RoomDatabase() {
     abstract fun localBenchmarkDAO() : ILocalBenchmarkDAO
     abstract fun localUserDAO() : ILocalUserDAO
 }
