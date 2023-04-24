@@ -11,6 +11,17 @@ class Converters {
     private val gson = Gson()
 
     @TypeConverter
+    fun fromPids(value: ArrayList<String>): String {
+        return gson.toJson(value)
+    }
+
+    @TypeConverter
+    fun toPids(value: String): ArrayList<String> {
+        val listType = object : TypeToken<ArrayList<String>>() {}.type
+        return gson.fromJson(value, listType)
+    }
+
+    /*@TypeConverter
     fun fromBenchmarks(value: HashMap<String, Benchmark>): String {
         return gson.toJson(value)
     }
@@ -19,7 +30,7 @@ class Converters {
     fun toBenchmarks(value: String): HashMap<String, Benchmark> {
         val listType = object : TypeToken<HashMap<String, Benchmark>>() {}.type
         return gson.fromJson(value, listType)
-    }
+    }*/
 
     companion object {
         fun toMarkerOptions(benchmark: Benchmark): MarkerOptions {

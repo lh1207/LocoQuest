@@ -43,6 +43,8 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import com.locoquest.app.AppModule.Companion.user
 import com.locoquest.app.Converters.Companion.toMarkerOptions
 import com.locoquest.app.dto.Benchmark
@@ -226,18 +228,21 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         if(!hasLocationPermissions() || !isGpsOn()) return false
 
         val lastLocation = lastLocation()
-        val inProximity = isWithin500Feet(
+        val inProximity = true
+            /*isWithin500Feet(
             marker.position,
             LatLng(lastLocation.latitude, lastLocation.longitude)
-        )
+        )*/
 
         if(!markerToBenchmark.contains(marker)) return true
 
         val benchmark = markerToBenchmark[marker]
-        if(!user.benchmarks.contains(benchmark?.pid)) {
+        if(!user.pids.contains(benchmark?.pid)) {
             if(inProximity) {
-                user.benchmarks[benchmark!!.pid] = benchmark
+                user.pids.add(benchmark!!.pid)
                 Thread{AppModule.db?.localUserDAO()?.insert(user)}.start()
+                Firebase.firestore.collection("benchmarks").document(user.uid)
+                    .set(hashMapOf("pids" to user.pids.toList()))
                 marker.setIcon(BitmapDescriptorFactory.defaultMarker(HUE))
                 Toast.makeText(context, "Benchmark completed", Toast.LENGTH_SHORT).show()
             }else {
@@ -326,7 +331,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
                         // Update marker colors after user switch
                         if(isUserSwitched) {
                             existingBenchmarks.forEach {
-                                if (user.benchmarks.contains(it.pid)) Handler(Looper.getMainLooper()).post {
+                                if (user.pids.contains(it.pid)) Handler(Looper.getMainLooper()).post {
                                     benchmarkToMarker[it]?.setIcon(BitmapDescriptorFactory.defaultMarker(HUE))
                                 }
                             }
@@ -371,33 +376,40 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     }
 
     private fun goToSelectedBenchmark() {
-        if (selectedBenchmark == null) return
+        if (selectedPid == null) return
         Log.d("tracker", "going to selected benchmark")
+
+        val benchmarks = BenchmarkService().getBenchmarks(listOf(selectedPid!!))
+        if(benchmarks == null || benchmarks.size != 1) {
+            selectedPid = null
+            return
+        }
+
+        val selectedBenchmark = benchmarks[0]
 
         tracking = false
         googleMap?.moveCamera(
             CameraUpdateFactory.newLatLngZoom(
                 LatLng(
-                    selectedBenchmark?.lat?.toDouble()!!,
-                    selectedBenchmark?.lon?.toDouble()!!
+                    selectedBenchmark.lat.toDouble(),
+                    selectedBenchmark.lon.toDouble()
                 ), 15f
             )
         )
 
-
         val selectedMarker =
             if (benchmarkToMarker.contains(selectedBenchmark))
                 benchmarkToMarker[selectedBenchmark]
-            else addBenchmarkToMap(selectedBenchmark!!)
+            else addBenchmarkToMap(selectedBenchmark)
 
         selectedMarker?.showInfoWindow()
 
-        selectedBenchmark = null
+        selectedPid = null
     }
 
     private fun addBenchmarkToMap(benchmark: Benchmark) : Marker? {
         var options = toMarkerOptions(benchmark)
-        if(user.benchmarks.contains(benchmark.pid))
+        if(user.pids.contains(benchmark.pid))
             options = options.icon(BitmapDescriptorFactory.defaultMarker(HUE))
         val marker = googleMap!!.addMarker(options)
         if(marker != null) {
@@ -549,7 +561,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     }
 
     companion object{
-        var selectedBenchmark: Benchmark? = null
+        var selectedPid: String? = null
         private const val HUE = 200f
         private const val DEFAULT_ZOOM = 15f
         private const val TRACKING_INTERVAL = 5000L

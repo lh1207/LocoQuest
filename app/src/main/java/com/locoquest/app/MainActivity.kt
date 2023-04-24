@@ -7,6 +7,8 @@ remote server, and authenticating with Firebase.
  */
 package com.locoquest.app
 
+import BenchmarkService
+import IBenchmarkService
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.IntentSender
@@ -18,9 +20,11 @@ import android.os.Looper
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
@@ -33,6 +37,7 @@ import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.locoquest.app.AppModule.Companion.db
 import com.locoquest.app.AppModule.Companion.guest
@@ -40,6 +45,7 @@ import com.locoquest.app.AppModule.Companion.user
 import com.locoquest.app.dao.DB
 import com.locoquest.app.dto.Benchmark
 import com.locoquest.app.dto.User
+import kotlinx.coroutines.launch
 
 
 class MainActivity : AppCompatActivity(), Profile.ProfileListener {
@@ -51,6 +57,7 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
     private var home: Home = Home()
     private var profile: Profile? = null
     private var switchingUser = false
+    private val fDb = Firebase.firestore
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -127,7 +134,7 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
                         auth.signInWithCredential(firebaseCredential)
                             .addOnCompleteListener(this) { task ->
                                 if (task.isSuccessful) {
-                                    user = User(auth.currentUser!!.uid, auth.currentUser!!.displayName!!, HashMap())
+                                    user = User(auth.currentUser!!.uid, auth.currentUser!!.displayName!!, ArrayList())
                                     switchUser()
                                     displayUserInfo()
                                     Log.d(TAG, "signInWithCredential:success")
@@ -193,9 +200,9 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
         }
     }
 
-    override fun onBenchmarkClicked(benchmark: Benchmark) {
+    override fun onBenchmarkClicked(pid: String) {
         if(profile == null) return
-        Home.selectedBenchmark = benchmark
+        Home.selectedPid = pid
         home.loadMarkers(false)
         supportFragmentManager.beginTransaction().remove(profile!!).commit()
         profile = null
@@ -274,8 +281,30 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
                 }else user = tmpUser
 
                 Handler(Looper.getMainLooper()).post{
+                    fDb.collection("benchmarks").document(user.uid)
+                        .get()
+                        .addOnSuccessListener {
+                            Log.d(TAG, "${it.id} => ${it.data}")
+                            user = User(user.uid, user.displayName, it["pids"] as ArrayList<String>)
+                            Thread{ db!!.localUserDAO().update(user)}.start()
+                            home.loadMarkers(true)
+                            /*val benchmarkService: IBenchmarkService = BenchmarkService()
+                            lifecycleScope.launch {
+                                benchmarkService.getBenchmarks()
+                            }*/
+                        }
+                        .addOnFailureListener{
+                            Log.d(TAG, it.toString())
+                            fDb.collection("benchmarks").document(user.uid)
+                                .set(hashMapOf("pids" to user.pids.toList()))
+                                .addOnCompleteListener { home.loadMarkers(true) }
+                                .addOnFailureListener {e ->
+                                    Log.d(TAG, e.toString())
+                                }
+                        }
+
                     supportActionBar?.title = user.displayName
-                    home.loadMarkers(true)
+                    //home.loadMarkers(true)
                     if(profile != null){
                         /*profile = Profile(this)
                         supportFragmentManager.beginTransaction().replace(R.id.profile_container, profile!!).commit()*/

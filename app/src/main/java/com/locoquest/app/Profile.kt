@@ -29,6 +29,7 @@ import com.bumptech.glide.request.target.CustomTarget
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.locoquest.app.AppModule.Companion.guest
 import com.locoquest.app.AppModule.Companion.user
@@ -39,7 +40,7 @@ import com.locoquest.app.dto.User
 class Profile(private val profileListener: ProfileListener) : Fragment(), OnLongClickListener, OnClickListener {
 
     interface ProfileListener {
-        fun onBenchmarkClicked(benchmark: Benchmark)
+        fun onBenchmarkClicked(pid: String)
         fun onLogin()
         fun onSignOut()
     }
@@ -65,7 +66,7 @@ class Profile(private val profileListener: ProfileListener) : Fragment(), OnLong
 
         recyclerView = view.findViewById(R.id.benchmarks)
         recyclerView.layoutManager = LinearLayoutManager(context)
-        adapter = BenchmarkAdapter(ArrayList(user.benchmarks.values.toList()), this, this)
+        adapter = BenchmarkAdapter(user.pids, this, this)
         recyclerView.adapter = adapter
 
         Glide.with(this)
@@ -127,8 +128,10 @@ class Profile(private val profileListener: ProfileListener) : Fragment(), OnLong
                 val pid = pidT.substring(0, pidT.length-1)
                 adapter.removeBenchmark(pid)
                 adapter.notifyDataSetChanged()
-                user.benchmarks.remove(pid)
+                user.pids.remove(pid)
                 Thread{ AppModule.db?.localUserDAO()?.update(user) }.start()
+                Firebase.firestore.collection("benchmarks").document(user.uid)
+                    .set(hashMapOf("pids" to user.pids.toList()))
             }
             .show()
         return true
@@ -137,6 +140,6 @@ class Profile(private val profileListener: ProfileListener) : Fragment(), OnLong
     override fun onClick(view: View?) {
         val pidT = view?.findViewById<TextView>(R.id.pid)?.text.toString()
         val pid = pidT.substring(0, pidT.length-1)
-        if(user.benchmarks.containsKey(pid)) profileListener.onBenchmarkClicked(user.benchmarks[pid]!!)
+        if(user.pids.contains(pid)) profileListener.onBenchmarkClicked(pid)
     }
 }
