@@ -8,5 +8,6 @@ data class User(
     @PrimaryKey
     val uid: String,
     var displayName: String = "",
-    val pids: ArrayList<String> = ArrayList()
+    val pids: ArrayList<String> = ArrayList(),
+    val friends: ArrayList<String> = ArrayList()
 )

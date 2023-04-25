@@ -71,7 +71,7 @@ class Profile(private val profileListener: ProfileListener) : Fragment(), OnLong
         recyclerView = view.findViewById(R.id.benchmarks)
         recyclerView.layoutManager = LinearLayoutManager(context)
         Thread{
-            val benchmarks = BenchmarkService().getBenchmarks(user.pids.toList())
+            val benchmarks = if(user.pids.size > 0) BenchmarkService().getBenchmarks(user.pids.toList()) else emptyList()
             if(benchmarks.isNullOrEmpty()) return@Thread
             savedBenchmarks.addAll(benchmarks)
             adapter = BenchmarkAdapter(savedBenchmarks, this, this)
@@ -107,6 +107,10 @@ class Profile(private val profileListener: ProfileListener) : Fragment(), OnLong
                 user.displayName = input.text.toString()
                 (activity as AppCompatActivity?)!!.supportActionBar?.title = user.displayName
                 Thread{ AppModule.db?.localUserDAO()?.update(user) }.start()
+                Firebase.firestore.collection("users").document(user.uid)
+                    .set(hashMapOf(
+                        "name" to user.displayName
+                    ))
             }
             val dialog = builder.create()
             dialog.show()

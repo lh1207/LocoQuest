@@ -7,7 +7,7 @@ import com.locoquest.app.Converters
 import com.locoquest.app.dto.Benchmark
 import com.locoquest.app.dto.User
 
-@Database(entities = [Benchmark::class, User::class], version = 1)
+@Database(entities = [Benchmark::class, User::class], version = 2)
 @TypeConverters(Converters::class)
 abstract class DB : RoomDatabase() {
     abstract fun localBenchmarkDAO() : ILocalBenchmarkDAO

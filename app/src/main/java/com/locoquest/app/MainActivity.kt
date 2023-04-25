@@ -266,6 +266,7 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun switchUser(){
         if(!switchingUser)
             Thread{
@@ -278,22 +279,25 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
                 }else user = tmpUser
 
                 Handler(Looper.getMainLooper()).post{
-                    fDb.collection("benchmarks").document(user.uid)
+                    fDb.collection("users").document(user.uid)
                         .get()
                         .addOnSuccessListener {
+                            if(it.data == null){
+                                pushUser()
+                                return@addOnSuccessListener
+                            }
                             Log.d(TAG, "${it.id} => ${it.data}")
-                            user = User(user.uid, user.displayName, it["pids"] as ArrayList<String>)
+                            user = User(user.uid,
+                                it["name"] as String,
+                                it["pids"] as ArrayList<String>,
+                                it["uids"] as ArrayList<String>
+                            )
                             Thread{ db!!.localUserDAO().update(user)}.start()
                             home.loadMarkers(true)
                         }
                         .addOnFailureListener{
                             Log.d(TAG, it.toString())
-                            fDb.collection("benchmarks").document(user.uid)
-                                .set(hashMapOf("pids" to user.pids.toList()))
-                                .addOnCompleteListener { home.loadMarkers(true) }
-                                .addOnFailureListener {e ->
-                                    Log.d(TAG, e.toString())
-                                }
+                            pushUser()
                         }
 
                     supportActionBar?.title = user.displayName
@@ -301,6 +305,19 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
                 }
                 switchingUser = false
             }.start()
+    }
+
+    private fun pushUser() {
+        fDb.collection("users").document(user.uid)
+            .set(hashMapOf(
+                "name" to user.displayName,
+                "pids" to user.pids.toList(),
+                "uids" to user.friends.toList()
+            ))
+            .addOnCompleteListener { home.loadMarkers(true) }
+            .addOnFailureListener {e ->
+                Log.d(TAG, e.toString())
+            }
     }
 
     private fun hideProfile(){

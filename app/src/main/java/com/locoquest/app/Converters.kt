@@ -11,12 +11,12 @@ class Converters {
     private val gson = Gson()
 
     @TypeConverter
-    fun fromPids(value: ArrayList<String>): String {
+    fun fromArrayListString(value: ArrayList<String>): String {
         return gson.toJson(value)
     }
 
     @TypeConverter
-    fun toPids(value: String): ArrayList<String> {
+    fun toArrayListString(value: String): ArrayList<String> {
         val listType = object : TypeToken<ArrayList<String>>() {}.type
         return gson.fromJson(value, listType)
     }
