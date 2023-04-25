@@ -191,8 +191,7 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
                     profile = Profile(this)
                     supportFragmentManager.beginTransaction().replace(R.id.profile_container, profile!!).commit()
                 } else {
-                    supportFragmentManager.beginTransaction().remove(profile!!).commit()
-                    profile = null
+                    hideProfile()
                 }
                 true
             }
@@ -200,12 +199,10 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
         }
     }
 
-    override fun onBenchmarkClicked(pid: String) {
-        if(profile == null) return
-        Home.selectedPid = pid
+    override fun onBenchmarkClicked(benchmark: Benchmark) {
+        hideProfile()
+        home.selectedBenchmark = benchmark
         home.loadMarkers(false)
-        supportFragmentManager.beginTransaction().remove(profile!!).commit()
-        profile = null
     }
 
     override fun onLogin() {
@@ -214,19 +211,19 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
                 .addOnSuccessListener(this) { result ->
                     try {
                         startIntentSenderForResult(
-                            result.pendingIntent.intentSender, MainActivity.REQ_ONE_TAP,
+                            result.pendingIntent.intentSender, REQ_ONE_TAP,
                             null, 0, 0, 0
                         )
                     } catch (e: IntentSender.SendIntentException) {
-                        Log.e(MainActivity.TAG, "Couldn't start One Tap UI: ${e.localizedMessage}")
+                        Log.e(TAG, "Couldn't start One Tap UI: ${e.localizedMessage}")
                     }
                 }
                 .addOnFailureListener(this) { e ->
                     // No Google Accounts found. Just continue presenting the signed-out UI.
-                    e.localizedMessage?.let { it1 -> Log.d(MainActivity.TAG, it1) }
+                    e.localizedMessage?.let { it1 -> Log.d(TAG, it1) }
                 }
         } catch (ex: java.lang.Exception) {
-            ex.localizedMessage?.let { Log.d(MainActivity.TAG, it) }
+            ex.localizedMessage?.let { Log.d(TAG, it) }
         }
     }
 
@@ -288,10 +285,6 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
                             user = User(user.uid, user.displayName, it["pids"] as ArrayList<String>)
                             Thread{ db!!.localUserDAO().update(user)}.start()
                             home.loadMarkers(true)
-                            /*val benchmarkService: IBenchmarkService = BenchmarkService()
-                            lifecycleScope.launch {
-                                benchmarkService.getBenchmarks()
-                            }*/
                         }
                         .addOnFailureListener{
                             Log.d(TAG, it.toString())
@@ -304,16 +297,17 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
                         }
 
                     supportActionBar?.title = user.displayName
-                    //home.loadMarkers(true)
-                    if(profile != null){
-                        /*profile = Profile(this)
-                        supportFragmentManager.beginTransaction().replace(R.id.profile_container, profile!!).commit()*/
-                        supportFragmentManager.beginTransaction().remove(profile!!).commit()
-                        profile = null
-                    }
+                    hideProfile()
                 }
                 switchingUser = false
             }.start()
+    }
+
+    private fun hideProfile(){
+        if(profile != null){
+            supportFragmentManager.beginTransaction().remove(profile!!).commit()
+            profile = null
+        }
     }
 
     companion object {

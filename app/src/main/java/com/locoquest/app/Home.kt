@@ -53,6 +53,7 @@ import java.net.UnknownHostException
 
 class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
 
+    var selectedBenchmark: Benchmark? = null
     private var googleMap: GoogleMap? = null
     private var selectedMarker: Marker? = null
     private var mapFragment: SupportMapFragment? = null
@@ -228,11 +229,11 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         if(!hasLocationPermissions() || !isGpsOn()) return false
 
         val lastLocation = lastLocation()
-        val inProximity = true
-            /*isWithin500Feet(
+        val inProximity = //true
+            isWithin500Feet(
             marker.position,
             LatLng(lastLocation.latitude, lastLocation.longitude)
-        )*/
+        )
 
         if(!markerToBenchmark.contains(marker)) return true
 
@@ -297,77 +298,74 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         if((loadingMarkers && !isUserSwitched) || googleMap == null) return
         loadingMarkers = true
         val map = googleMap!!
-        val benchmarkService: IBenchmarkService = BenchmarkService()
 
-        lifecycleScope.launch {
-            try {
-                val bounds = map.projection.visibleRegion.latLngBounds
-                Thread {
-                    try {
-                        val benchmarkList = benchmarkService.getBenchmarks(bounds)
-                        if (benchmarkList == null) {
-                            println("Error: unable to retrieve benchmark data")
-                            return@Thread
-                        }
-                        if (benchmarkList.isEmpty() || (isSameBenchmarks(benchmarkList) && !isUserSwitched)) {
-                            loadingMarkers = false
-                            return@Thread
-                        }
-
-                        if(isUserSwitched)
-                            Handler(Looper.getMainLooper()).post {
-                                markerToBenchmark.keys.forEach { it.setIcon(BitmapDescriptorFactory.defaultMarker()) }
-                            }
-
-                        val newBenchmarks = mutableListOf<Benchmark>()
-                        val existingBenchmarks = mutableListOf<Benchmark>()
-
-                        // Find new and existing benchmarks
-                        for (benchmark in benchmarkList)
-                            if (benchmarkToMarker.keys.contains(benchmark))
-                                existingBenchmarks.add(benchmark)
-                            else newBenchmarks.add(benchmark)
-
-                        // Update marker colors after user switch
-                        if(isUserSwitched) {
-                            existingBenchmarks.forEach {
-                                if (user.pids.contains(it.pid)) Handler(Looper.getMainLooper()).post {
-                                    benchmarkToMarker[it]?.setIcon(BitmapDescriptorFactory.defaultMarker(HUE))
-                                }
-                            }
-                        }
-
-                        // Remove markers for deleted benchmarks
-                        val iterator = benchmarkToMarker.iterator()
-                        while (iterator.hasNext()) {
-                            val entry = iterator.next()
-                            if (!benchmarkList.contains(entry.key)) {
-                                val marker = entry.value
-                                iterator.remove()
-                                markerToBenchmark.remove(marker)
-                                Handler(Looper.getMainLooper()).post { marker.remove() }
-                            }
-                        }
-
-                        // Add markers for new benchmarks
-                        Handler(Looper.getMainLooper()).post {
-                            for (benchmark in newBenchmarks)
-                                addBenchmarkToMap(benchmark)
-                            loadingMarkers = false
-                            Log.d("tracker", "markers loaded")
-                        }
-                    }catch (e: ConcurrentModificationException){
-                        loadingMarkers = false
-                        Log.e("LoadMarkers", e.toString())
-                    }catch (e: UnknownHostException){
-                        loadingMarkers = false
-                        Log.e("LoadMarkers", e.toString())
+        try {
+            val bounds = map.projection.visibleRegion.latLngBounds
+            Thread {
+                try {
+                    val benchmarkList = BenchmarkService().getBenchmarks(bounds)
+                    if (benchmarkList == null) {
+                        println("Error: unable to retrieve benchmark data")
+                        return@Thread
                     }
-                }.start()
-            } catch (e: Exception) {
-                loadingMarkers = false
-                println("Error: ${e.message}")
-            }
+                    if (benchmarkList.isEmpty() || (isSameBenchmarks(benchmarkList) && !isUserSwitched)) {
+                        loadingMarkers = false
+                        return@Thread
+                    }
+
+                    if(isUserSwitched)
+                        Handler(Looper.getMainLooper()).post {
+                            markerToBenchmark.keys.forEach { it.setIcon(BitmapDescriptorFactory.defaultMarker()) }
+                        }
+
+                    val newBenchmarks = mutableListOf<Benchmark>()
+                    val existingBenchmarks = mutableListOf<Benchmark>()
+
+                    // Find new and existing benchmarks
+                    for (benchmark in benchmarkList)
+                        if (benchmarkToMarker.keys.contains(benchmark))
+                            existingBenchmarks.add(benchmark)
+                        else newBenchmarks.add(benchmark)
+
+                    // Update marker colors after user switch
+                    if(isUserSwitched) {
+                        existingBenchmarks.forEach {
+                            if (user.pids.contains(it.pid)) Handler(Looper.getMainLooper()).post {
+                                benchmarkToMarker[it]?.setIcon(BitmapDescriptorFactory.defaultMarker(HUE))
+                            }
+                        }
+                    }
+
+                    // Remove markers for deleted benchmarks
+                    val iterator = benchmarkToMarker.iterator()
+                    while (iterator.hasNext()) {
+                        val entry = iterator.next()
+                        if (!benchmarkList.contains(entry.key)) {
+                            val marker = entry.value
+                            iterator.remove()
+                            markerToBenchmark.remove(marker)
+                            Handler(Looper.getMainLooper()).post { marker.remove() }
+                        }
+                    }
+
+                    // Add markers for new benchmarks
+                    Handler(Looper.getMainLooper()).post {
+                        for (benchmark in newBenchmarks)
+                            addBenchmarkToMap(benchmark)
+                        loadingMarkers = false
+                        Log.d("tracker", "markers loaded")
+                    }
+                }catch (e: ConcurrentModificationException){
+                    loadingMarkers = false
+                    Log.e("LoadMarkers", e.toString())
+                }catch (e: UnknownHostException){
+                    loadingMarkers = false
+                    Log.e("LoadMarkers", e.toString())
+                }
+            }.start()
+        } catch (e: Exception) {
+            loadingMarkers = false
+            println("Error: ${e.message}")
         }
     }
 
@@ -376,35 +374,28 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     }
 
     private fun goToSelectedBenchmark() {
-        if (selectedPid == null) return
-        Log.d("tracker", "going to selected benchmark")
+            if (selectedBenchmark == null) return
+            Log.d("tracker", "going to selected benchmark")
 
-        val benchmarks = BenchmarkService().getBenchmarks(listOf(selectedPid!!))
-        if(benchmarks == null || benchmarks.size != 1) {
-            selectedPid = null
-            return
-        }
-
-        val selectedBenchmark = benchmarks[0]
-
-        tracking = false
-        googleMap?.moveCamera(
-            CameraUpdateFactory.newLatLngZoom(
-                LatLng(
-                    selectedBenchmark.lat.toDouble(),
-                    selectedBenchmark.lon.toDouble()
-                ), 15f
+            val benchmark = selectedBenchmark!!
+            tracking = false
+            googleMap?.moveCamera(
+                CameraUpdateFactory.newLatLngZoom(
+                    LatLng(
+                        benchmark.lat.toDouble(),
+                        benchmark.lon.toDouble()
+                    ), 15f
+                )
             )
-        )
 
-        val selectedMarker =
-            if (benchmarkToMarker.contains(selectedBenchmark))
-                benchmarkToMarker[selectedBenchmark]
-            else addBenchmarkToMap(selectedBenchmark)
+            val selectedMarker =
+                if (benchmarkToMarker.contains(benchmark))
+                    benchmarkToMarker[benchmark]
+                else addBenchmarkToMap(benchmark)
 
-        selectedMarker?.showInfoWindow()
+            selectedMarker?.showInfoWindow()
 
-        selectedPid = null
+            selectedBenchmark = null
     }
 
     private fun addBenchmarkToMap(benchmark: Benchmark) : Marker? {
@@ -561,7 +552,6 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     }
 
     companion object{
-        var selectedPid: String? = null
         private const val HUE = 200f
         private const val DEFAULT_ZOOM = 15f
         private const val TRACKING_INTERVAL = 5000L

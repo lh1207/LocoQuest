@@ -1,9 +1,12 @@
 package com.locoquest.app
 
+import BenchmarkService
 import android.app.AlertDialog
 import android.content.IntentSender
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
@@ -40,13 +43,14 @@ import com.locoquest.app.dto.User
 class Profile(private val profileListener: ProfileListener) : Fragment(), OnLongClickListener, OnClickListener {
 
     interface ProfileListener {
-        fun onBenchmarkClicked(pid: String)
+        fun onBenchmarkClicked(benchmark: Benchmark)
         fun onLogin()
         fun onSignOut()
     }
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: BenchmarkAdapter
     private lateinit var signBtn: Button
+    private val savedBenchmarks: ArrayList<Benchmark> = ArrayList()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -66,8 +70,13 @@ class Profile(private val profileListener: ProfileListener) : Fragment(), OnLong
 
         recyclerView = view.findViewById(R.id.benchmarks)
         recyclerView.layoutManager = LinearLayoutManager(context)
-        adapter = BenchmarkAdapter(user.pids, this, this)
-        recyclerView.adapter = adapter
+        Thread{
+            val benchmarks = BenchmarkService().getBenchmarks(user.pids.toList())
+            if(benchmarks.isNullOrEmpty()) return@Thread
+            savedBenchmarks.addAll(benchmarks)
+            adapter = BenchmarkAdapter(savedBenchmarks, this, this)
+            Handler(Looper.getMainLooper()).post{recyclerView.adapter = adapter}
+        }.start()
 
         Glide.with(this)
             .load(FirebaseAuth.getInstance().currentUser?.photoUrl)
@@ -140,6 +149,6 @@ class Profile(private val profileListener: ProfileListener) : Fragment(), OnLong
     override fun onClick(view: View?) {
         val pidT = view?.findViewById<TextView>(R.id.pid)?.text.toString()
         val pid = pidT.substring(0, pidT.length-1)
-        if(user.pids.contains(pid)) profileListener.onBenchmarkClicked(pid)
+        if(user.pids.contains(pid)) profileListener.onBenchmarkClicked(savedBenchmarks.first { x -> x.pid == pid })
     }
 }
