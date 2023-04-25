@@ -12,7 +12,7 @@ android {
         applicationId "com.locoquest.app"
         minSdk 23 // android 6.0
         targetSdk 32
-        versionCode 5
+        versionCode 6
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
