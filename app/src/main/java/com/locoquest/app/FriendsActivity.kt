@@ -59,7 +59,8 @@ class FriendsActivity : AppCompatActivity(), View.OnClickListener, View.OnLongCl
                 if (users.isEmpty()) Firebase.firestore.collection("users")
                     .get().addOnSuccessListener {
                         it.documents.forEach { doc ->
-                            if (doc.id != user.uid && doc["name"] != null && doc["name"] != "" && doc["photoUrl"] != null && doc["photoUrl"] != "") {
+                            if (doc.id != user.uid && !user.friends.contains(doc.id)
+                                && doc["name"] != null && doc["name"] != "" && doc["photoUrl"] != null) {
                                 users.add(
                                     User(
                                         doc.id,
