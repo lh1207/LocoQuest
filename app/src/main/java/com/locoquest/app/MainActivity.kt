@@ -185,7 +185,7 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
         return when (item.itemId) {
             R.id.menu_item_account -> {
                 if (profile == null) {
-                    profile = Profile(user, this)
+                    profile = Profile(user, true,this)
                     supportFragmentManager.beginTransaction().replace(R.id.profile_container, profile!!).commit()
                 } else {
                     hideProfile()

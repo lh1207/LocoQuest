@@ -27,13 +27,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.bumptech.glide.request.target.CustomTarget
-import com.google.firebase.auth.FirebaseAuth
 import com.locoquest.app.AppModule.Companion.guest
 import com.locoquest.app.dto.Benchmark
 import com.locoquest.app.dto.User
 
 
-class Profile(private val user: User, private val profileListener: ProfileListener) : Fragment(), OnLongClickListener, OnClickListener {
+class Profile(private val user: User, private val enableEdit: Boolean, private val profileListener: ProfileListener) : Fragment(), OnLongClickListener, OnClickListener {
 
     interface ProfileListener {
         fun onBenchmarkClicked(benchmark: Benchmark)
@@ -44,6 +43,7 @@ class Profile(private val user: User, private val profileListener: ProfileListen
     private lateinit var adapter: BenchmarkAdapter
     private lateinit var recyclerView: RecyclerView
     private lateinit var benchmarkCount: TextView
+    private lateinit var name: TextView
     private val savedBenchmarks: ArrayList<Benchmark> = ArrayList()
 
     override fun onCreateView(
@@ -59,7 +59,7 @@ class Profile(private val user: User, private val profileListener: ProfileListen
         val signBtn = view.findViewById<Button>(R.id.sign_in_out_btn)
         val editNameBtn = view.findViewById<Button>(R.id.editNameButton)
 
-        if(user == AppModule.user) {
+        if(enableEdit) {
             signBtn.text =
                 if (user == guest) getString(R.string.login) else getString(R.string.sign_out)
             signBtn.setOnClickListener {
@@ -106,7 +106,8 @@ class Profile(private val user: User, private val profileListener: ProfileListen
                 override fun onLoadCleared(placeholder: Drawable?) {}
             })
 
-        view.findViewById<TextView>(R.id.nameTextView).text = user.displayName
+        name = view.findViewById(R.id.nameTextView)
+        name.text = user.displayName
 
         view.findViewById<TextView>(R.id.friends_tv).setOnClickListener {
             FriendsActivity.user = user
@@ -117,7 +118,7 @@ class Profile(private val user: User, private val profileListener: ProfileListen
     }
 
     override fun onLongClick(view: View?): Boolean {
-        if(user != AppModule.user) return false
+        if(enableEdit) return false
         AlertDialog.Builder(context)
             .setTitle("Remove Benchmark?")
             .setMessage("Warning! This cannot be undone.")
@@ -136,7 +137,7 @@ class Profile(private val user: User, private val profileListener: ProfileListen
     }
 
     override fun onClick(view: View?) {
-        if(user != AppModule.user) return
+        if(!enableEdit) return
         val pidT = view?.findViewById<TextView>(R.id.pid)?.text.toString()
         val pid = pidT.substring(0, pidT.length-1)
         if(user.pids.contains(pid)) profileListener.onBenchmarkClicked(savedBenchmarks.first { x -> x.pid == pid })
@@ -153,6 +154,7 @@ class Profile(private val user: User, private val profileListener: ProfileListen
 
         builder.setPositiveButton("OK") { _, _ ->
             user.displayName = input.text.toString()
+            name.text = user.displayName
             (activity as AppCompatActivity?)!!.supportActionBar?.title = user.displayName
             user.update()
         }

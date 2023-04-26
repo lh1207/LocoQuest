@@ -20,6 +20,7 @@ import com.locoquest.app.dto.User
 class FriendsActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClickListener,
     Profile.ProfileListener {
     private val users: ArrayList<User> = ArrayList()
+    private lateinit var fab: FloatingActionButton
     private lateinit var adapter: FriendsAdapter
     private lateinit var recyclerView: RecyclerView
     private lateinit var friendCount: TextView
@@ -52,7 +53,7 @@ class FriendsActivity : AppCompatActivity(), View.OnClickListener, View.OnLongCl
                 }
         }
 
-        val fab = findViewById<FloatingActionButton>(R.id.add_friend_fab)
+        fab = findViewById(R.id.add_friend_fab)
         if(user == AppModule.user) {
             fab.setOnClickListener {
                 if (users.isEmpty()) Firebase.firestore.collection("users")
@@ -83,8 +84,9 @@ class FriendsActivity : AppCompatActivity(), View.OnClickListener, View.OnLongCl
                     it["photoUrl"] as String,
                     it["pids"] as ArrayList<String>,
                     it["uids"] as ArrayList<String>)
-                profile = Profile(friend, this)
+                profile = Profile(friend, false, this)
                 supportFragmentManager.beginTransaction().replace(R.id.fragment_container, profile!!).commit()
+                fab.visibility = View.GONE
             }
     }
 
@@ -163,6 +165,7 @@ class FriendsActivity : AppCompatActivity(), View.OnClickListener, View.OnLongCl
     override fun onClose() {
         supportFragmentManager.beginTransaction().remove(profile!!).commit()
         profile = null
+        if(user == AppModule.user) fab.visibility = View.VISIBLE
     }
 
     companion object{

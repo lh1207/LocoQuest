@@ -27,7 +27,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat.getSystemService
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -225,11 +224,11 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         if(!hasLocationPermissions() || !isGpsOn()) return false
 
         val lastLocation = lastLocation()
-        val inProximity = true
-            /*isWithin500Feet(
+        val inProximity = //true
+            isWithin500Feet(
             marker.position,
             LatLng(lastLocation.latitude, lastLocation.longitude)
-        )*/
+        )
 
         if(!markerToBenchmark.contains(marker)) return true
 
