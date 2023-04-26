@@ -24,6 +24,11 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".FriendsActivity"
+            android:exported="true"
+            android:parentActivityName=".MainActivity">
+        </activity>
+
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyDzJX8urQK_XOy0LQ5rk60eYFYRV-VCO9E" />

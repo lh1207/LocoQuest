@@ -7,8 +7,6 @@ remote server, and authenticating with Firebase.
  */
 package com.locoquest.app
 
-import BenchmarkService
-import IBenchmarkService
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.IntentSender
@@ -20,11 +18,9 @@ import android.os.Looper
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
@@ -45,7 +41,6 @@ import com.locoquest.app.AppModule.Companion.user
 import com.locoquest.app.dao.DB
 import com.locoquest.app.dto.Benchmark
 import com.locoquest.app.dto.User
-import kotlinx.coroutines.launch
 
 
 class MainActivity : AppCompatActivity(), Profile.ProfileListener {
@@ -134,7 +129,9 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
                         auth.signInWithCredential(firebaseCredential)
                             .addOnCompleteListener(this) { task ->
                                 if (task.isSuccessful) {
-                                    user = User(auth.currentUser!!.uid, auth.currentUser!!.displayName!!, ArrayList())
+                                    user = User(auth.currentUser!!.uid,
+                                        auth.currentUser!!.displayName!!,
+                                        auth.currentUser!!.photoUrl.toString())
                                     switchUser()
                                     displayUserInfo()
                                     Log.d(TAG, "signInWithCredential:success")
@@ -188,7 +185,7 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
         return when (item.itemId) {
             R.id.menu_item_account -> {
                 if (profile == null) {
-                    profile = Profile(this)
+                    profile = Profile(user, this)
                     supportFragmentManager.beginTransaction().replace(R.id.profile_container, profile!!).commit()
                 } else {
                     hideProfile()
@@ -239,31 +236,30 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
         }
     }
 
+    override fun onClose() {
+        TODO("Not yet implemented")
+    }
+
     private fun displayUserInfo() {
-        auth.currentUser?.let { user ->
-            supportActionBar?.let {
-                if(AppModule.user.displayName == "") {
-                    AppModule.user.displayName = user.displayName.toString()
-                    Thread { db?.localUserDAO()?.update(AppModule.user) }.start()
+        if (user.displayName == "") {
+            user.displayName = auth.currentUser?.displayName.toString()
+        }
+
+        supportActionBar?.title = user.displayName
+
+        Glide.with(this)
+            .load(user.photoUrl)
+            .transform(CircleCrop())
+            .into(object : CustomTarget<Drawable>() {
+                override fun onResourceReady(
+                    resource: Drawable,
+                    transition: com.bumptech.glide.request.transition.Transition<in Drawable>?
+                ) {
+                    menu.findItem(R.id.menu_item_account).icon = resource
                 }
 
-                it.title = user.displayName
-
-                Glide.with(this)
-                    .load(user.photoUrl)
-                    .transform(CircleCrop())
-                    .into(object : CustomTarget<Drawable>() {
-                        override fun onResourceReady(
-                            resource: Drawable,
-                            transition: com.bumptech.glide.request.transition.Transition<in Drawable>?
-                        ) {
-                            menu.findItem(R.id.menu_item_account).icon = resource
-                        }
-
-                        override fun onLoadCleared(placeholder: Drawable?) {}
-                    })
-            }
-        }
+                override fun onLoadCleared(placeholder: Drawable?) {}
+            })
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -278,46 +274,50 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
                     userDao.insert(user)
                 }else user = tmpUser
 
+
+
                 Handler(Looper.getMainLooper()).post{
+                    supportActionBar?.title = user.displayName
+                    hideProfile()
+
+                    if(user == guest) {
+                        switchingUser = false
+                        home.loadMarkers(true)
+                        return@post
+                    }
+
                     fDb.collection("users").document(user.uid)
                         .get()
                         .addOnSuccessListener {
                             if(it.data == null){
-                                pushUser()
+                                user.push()
                                 return@addOnSuccessListener
                             }
                             Log.d(TAG, "${it.id} => ${it.data}")
-                            user = User(user.uid,
-                                it["name"] as String,
-                                it["pids"] as ArrayList<String>,
-                                it["uids"] as ArrayList<String>
-                            )
+                            val name = if(it["name"] == null) {
+                                user.push()
+                                user.displayName
+                            } else it["name"] as String
+                            val photoUrl = if(it["photoUrl"] == null) {
+                                if(user.photoUrl == "") user.photoUrl = auth.currentUser?.photoUrl.toString()
+                                user.push()
+                                user.photoUrl
+                            } else it["photoUrl"] as String
+                            val pids = if(it["pids"] == null) ArrayList() else it["pids"] as ArrayList<String>
+                            val uids = if(it["uids"] == null) ArrayList() else it["uids"] as ArrayList<String>
+                            user = User(user.uid, name, photoUrl, pids, uids)
                             Thread{ db!!.localUserDAO().update(user)}.start()
                             home.loadMarkers(true)
                         }
                         .addOnFailureListener{
                             Log.d(TAG, it.toString())
-                            pushUser()
+                            user.push()
+                            home.loadMarkers(true)
                         }
 
-                    supportActionBar?.title = user.displayName
-                    hideProfile()
+                    switchingUser = false
                 }
-                switchingUser = false
             }.start()
-    }
-
-    private fun pushUser() {
-        fDb.collection("users").document(user.uid)
-            .set(hashMapOf(
-                "name" to user.displayName,
-                "pids" to user.pids.toList(),
-                "uids" to user.friends.toList()
-            ))
-            .addOnCompleteListener { home.loadMarkers(true) }
-            .addOnFailureListener {e ->
-                Log.d(TAG, e.toString())
-            }
     }
 
     private fun hideProfile(){

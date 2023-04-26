@@ -43,12 +43,9 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
 import com.locoquest.app.AppModule.Companion.user
 import com.locoquest.app.Converters.Companion.toMarkerOptions
 import com.locoquest.app.dto.Benchmark
-import kotlinx.coroutines.launch
 import java.net.UnknownHostException
 
 class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
@@ -169,11 +166,10 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
                 Handler(Looper.getMainLooper()).post{layersFab.visibility = View.VISIBLE}
             }.start()
         }
-        //var wasTracking = tracking
         map.setOnCameraMoveStartedListener {
             Log.d("tracker", "camera started moving: tracking:$tracking")
-            layersLayout.visibility = View.GONE
             updateTrackingStatus(cameraIsBeingMoved)
+            if(!tracking) layersLayout.visibility = View.GONE
             Log.d("tracker", "end of moving fun: tracking:$tracking")
         }
 
@@ -229,11 +225,11 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         if(!hasLocationPermissions() || !isGpsOn()) return false
 
         val lastLocation = lastLocation()
-        val inProximity = //true
-            isWithin500Feet(
+        val inProximity = true
+            /*isWithin500Feet(
             marker.position,
             LatLng(lastLocation.latitude, lastLocation.longitude)
-        )
+        )*/
 
         if(!markerToBenchmark.contains(marker)) return true
 
@@ -241,9 +237,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         if(!user.pids.contains(benchmark?.pid)) {
             if(inProximity) {
                 user.pids.add(benchmark!!.pid)
-                Thread{AppModule.db?.localUserDAO()?.insert(user)}.start()
-                Firebase.firestore.collection("benchmarks").document(user.uid)
-                    .set(hashMapOf("pids" to user.pids.toList()))
+                user.update()
                 marker.setIcon(BitmapDescriptorFactory.defaultMarker(HUE))
                 Toast.makeText(context, "Benchmark completed", Toast.LENGTH_SHORT).show()
             }else {
@@ -493,7 +487,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
                     override fun onCancel() {
                         cameraIsBeingMoved = false
                         updateTrackingStatus(false)
-                        //loadMarkers()
+                        layersLayout.visibility = View.GONE
                     }
                 })
         }else{
