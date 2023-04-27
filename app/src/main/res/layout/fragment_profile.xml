@@ -104,11 +104,11 @@
 
         <!-- Completed Benchmarks -->
         <TextView
-            android:id="@+id/completedBenchmarksTextView"
+            android:id="@+id/visitedBenchmarksText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="16dp"
-            android:text="@string/completed_benchmarks"
+            android:text="@string/visited_benchmarks"
             android:layout_below="@id/divider2"
             android:textSize="24sp"
             android:textStyle="bold" />
@@ -116,8 +116,8 @@
         <TextView
             android:id="@+id/benchmarkCount"
             android:textSize="24sp"
-            android:layout_toEndOf="@id/completedBenchmarksTextView"
-            android:layout_alignBaseline="@id/completedBenchmarksTextView"
+            android:layout_toEndOf="@id/visitedBenchmarksText"
+            android:layout_alignBaseline="@id/visitedBenchmarksText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
 
@@ -126,7 +126,7 @@
             tools:listitem="@layout/benchmark"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_below="@+id/completedBenchmarksTextView"
+            android:layout_below="@+id/visitedBenchmarksText"
             android:layout_alignParentBottom="true" />
 
     </RelativeLayout>

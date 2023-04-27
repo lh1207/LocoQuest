@@ -237,7 +237,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
             if(inProximity) {
                 user.pids.add(benchmark!!.pid)
                 user.update()
-                marker.setIcon(BitmapDescriptorFactory.defaultMarker(HUE))
+                marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.hour_glass))
                 Toast.makeText(context, "Benchmark completed", Toast.LENGTH_SHORT).show()
             }else {
                 Toast.makeText(context, "Not close enough to complete", Toast.LENGTH_SHORT).show()
@@ -308,7 +308,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
 
                     if(isUserSwitched)
                         Handler(Looper.getMainLooper()).post {
-                            markerToBenchmark.keys.forEach { it.setIcon(BitmapDescriptorFactory.defaultMarker()) }
+                            markerToBenchmark.keys.forEach { it.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.coin)) }
                         }
 
                     val newBenchmarks = mutableListOf<Benchmark>()
@@ -324,7 +324,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
                     if(isUserSwitched) {
                         existingBenchmarks.forEach {
                             if (user.pids.contains(it.pid)) Handler(Looper.getMainLooper()).post {
-                                benchmarkToMarker[it]?.setIcon(BitmapDescriptorFactory.defaultMarker(HUE))
+                                benchmarkToMarker[it]?.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.hour_glass))
                             }
                         }
                     }
@@ -393,8 +393,9 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
 
     private fun addBenchmarkToMap(benchmark: Benchmark) : Marker? {
         var options = toMarkerOptions(benchmark)
-        if(user.pids.contains(benchmark.pid))
-            options = options.icon(BitmapDescriptorFactory.defaultMarker(HUE))
+        options = if(user.pids.contains(benchmark.pid))
+            options.icon(BitmapDescriptorFactory.fromResource(R.drawable.hour_glass))
+        else options.icon(BitmapDescriptorFactory.fromResource(R.drawable.coin))
         val marker = googleMap!!.addMarker(options)
         if(marker != null) {
             markerToBenchmark[marker] = benchmark

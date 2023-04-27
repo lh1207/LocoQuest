@@ -28,4 +28,5 @@
     <string name="terrain">Terrain</string>
     <string name="login">Login</string>
     <string name="sign_out">Sign Out</string>
+    <string name="visited_benchmarks">Visited Benchmarks</string>
 </resources>
