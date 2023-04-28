@@ -239,8 +239,8 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         if(!hasLocationPermissions() || !isGpsOn()) return false
 
         val lastLocation = lastLocation()
-        val inProximity = true
-            //isWithin500Feet(marker.position, LatLng(lastLocation.latitude, lastLocation.longitude))
+        val inProximity = //true
+            isWithin500Feet(marker.position, LatLng(lastLocation.latitude, lastLocation.longitude))
 
         //if coin is collectable
         if(!user.visited.contains(benchmark.pid) || (user.visited.contains(benchmark.pid) && canCollect(benchmark))) {
@@ -253,13 +253,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
                 user.update()
                 marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.hour_glass))
                 marker.snippet = "Collected ${Converters.formatSeconds(benchmark.lastVisitedSeconds)}"
-                Handler(Looper.getMainLooper()).postDelayed({
-                    try{
-                        marker.setIcon(getMarkerRes(benchmark))
-                    }catch (e: Exception){
-                        Log.e("marker set icon", e.toString())
-                    }
-                }, (SECONDS_TO_RECOLLECT * 1000).toLong())
+                scheduleSetMarkerIcon(marker, benchmark)
                 Toast.makeText(context, "Coin collected", Toast.LENGTH_SHORT).show()
             }else {
                 marker.snippet = getSnippet(benchmark)
@@ -275,10 +269,29 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         return false
     }
 
+    private fun scheduleSetMarkerIcon(marker: Marker, benchmark: Benchmark){
+        Handler(Looper.getMainLooper()).postDelayed({
+            try{
+                marker.setIcon(getMarkerRes(benchmark))
+            }catch (e: Exception){
+                Log.e("marker set icon", e.toString())
+            }
+        }, (SECONDS_TO_RECOLLECT * 1000).toLong())
+    }
+
+    private fun toCountdownFormat(seconds: Long): String {
+        val hours = seconds / 3600
+        val minutes = (seconds % 3600) / 60
+        val secondsRemaining = seconds % 60
+
+        return String.format("%02d:%02d:%02d", hours, minutes, secondsRemaining)
+    }
+
+
     private fun getSnippet(benchmark: Benchmark) : String{
         return if (benchmark.lastVisitedSeconds + SECONDS_TO_RECOLLECT > System.currentTimeMillis() / 1000) {
             val secondsLeft = benchmark.lastVisitedSeconds + SECONDS_TO_RECOLLECT - System.currentTimeMillis() / 1000
-            "Collect in $secondsLeft second(s)"
+            "Collect in ${toCountdownFormat(secondsLeft)}"
         }else if(benchmark.lastVisitedSeconds > 0) "Collected ${Converters.formatSeconds(benchmark.lastVisitedSeconds)}"
         else "Never collected"
     }
@@ -402,8 +415,11 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
 
                     // Add markers for new benchmarks
                     Handler(Looper.getMainLooper()).post {
-                        for (benchmark in newBenchmarks)
-                            addBenchmarkToMap(benchmark)
+                        for (benchmark in newBenchmarks) {
+                            val marker = addBenchmarkToMap(benchmark)
+                            if(marker != null && collected(benchmark))
+                                scheduleSetMarkerIcon(marker, benchmark)
+                        }
                         loadingMarkers = false
                         Log.d("tracker", "markers loaded")
                     }
@@ -623,6 +639,6 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         private const val TRACKING_INTERVAL = 5000L
         private const val TRACKING_FASTEST_INTERVAL = 1000L
         private const val CAMERA_ANIMATION_DURATION = 2000
-        const val SECONDS_TO_RECOLLECT = 10//14400 = 4 hours
+        const val SECONDS_TO_RECOLLECT = 14400 // 4 hrs
     }
 }
