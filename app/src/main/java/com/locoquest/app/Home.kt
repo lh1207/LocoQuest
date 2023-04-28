@@ -43,6 +43,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.locoquest.app.AppModule.Companion.DEBUG
 import com.locoquest.app.AppModule.Companion.user
 import com.locoquest.app.Converters.Companion.toMarkerOptions
 import com.locoquest.app.dto.Benchmark
@@ -239,8 +240,8 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         if(!hasLocationPermissions() || !isGpsOn()) return false
 
         val lastLocation = lastLocation()
-        val inProximity = //true
-            isWithin500Feet(marker.position, LatLng(lastLocation.latitude, lastLocation.longitude))
+        val inProximity = if(DEBUG) true
+            else isWithin500Feet(marker.position, LatLng(lastLocation.latitude, lastLocation.longitude))
 
         //if coin is collectable
         if(!user.visited.contains(benchmark.pid) || (user.visited.contains(benchmark.pid) && canCollect(benchmark))) {
@@ -251,7 +252,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
                 user.balance++
                 balance.text = user.balance.toString()
                 user.update()
-                marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.hour_glass))
+                marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.hour_glass_6))
                 marker.snippet = "Collected ${Converters.formatSeconds(benchmark.lastVisitedSeconds)}"
                 scheduleSetMarkerIcon(marker, benchmark)
                 Toast.makeText(context, "Coin collected", Toast.LENGTH_SHORT).show()
@@ -273,10 +274,11 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         Handler(Looper.getMainLooper()).postDelayed({
             try{
                 marker.setIcon(getMarkerRes(benchmark))
+                if(collected(benchmark)) scheduleSetMarkerIcon(marker, benchmark)
             }catch (e: Exception){
                 Log.e("marker set icon", e.toString())
             }
-        }, (SECONDS_TO_RECOLLECT * 1000).toLong())
+        }, (SECONDS_TO_RECOLLECT * 1000 / 7).toLong())
     }
 
     private fun toCountdownFormat(seconds: Long): String {
@@ -439,8 +441,25 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
 
     private fun getMarkerRes(benchmark: Benchmark) : BitmapDescriptor {
         return BitmapDescriptorFactory.fromResource(
-            if (user.visited.contains(benchmark.pid) && collected(benchmark)) R.drawable.hour_glass
+            if (user.visited.contains(benchmark.pid) && collected(benchmark)) {
+                val secondsLeft = benchmark.lastVisitedSeconds + SECONDS_TO_RECOLLECT - System.currentTimeMillis() / 1000
+                when(mapToRange(secondsLeft, IntRange(0, SECONDS_TO_RECOLLECT), IntRange(0,6))){
+                    0 -> R.drawable.hour_glass_0
+                    1 -> R.drawable.hour_glass_1
+                    2 -> R.drawable.hour_glass_2
+                    3 -> R.drawable.hour_glass_3
+                    4 -> R.drawable.hour_glass_4
+                    5 -> R.drawable.hour_glass_5
+                    6 -> R.drawable.hour_glass_6
+                    else -> R.drawable.hour_glass
+                }
+            }
             else R.drawable.coin)
+    }
+
+    private fun mapToRange(number: Long, original: IntRange, target: IntRange): Int {
+        val ratio = number.toFloat() / (original.last - original.first)
+        return (ratio * (target.last - target.first)).toInt()
     }
 
     private fun isSameBenchmarks(benchmarkList: List<Benchmark>) : Boolean{
@@ -473,11 +492,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     }
 
     private fun addBenchmarkToMap(benchmark: Benchmark) : Marker? {
-        var options = toMarkerOptions(benchmark)
-        options = if(user.visited.contains(benchmark.pid) && collected(user.visited[benchmark.pid]!!))
-            options.icon(BitmapDescriptorFactory.fromResource(R.drawable.hour_glass))
-        else options.icon(BitmapDescriptorFactory.fromResource(R.drawable.coin))
-        val marker = googleMap!!.addMarker(options)
+        val marker = googleMap!!.addMarker(toMarkerOptions(benchmark).icon(getMarkerRes(benchmark)))
         if(marker != null) {
             markerToBenchmark[marker] = benchmark
             benchmarkToMarker[benchmark] = marker
@@ -639,6 +654,6 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         private const val TRACKING_INTERVAL = 5000L
         private const val TRACKING_FASTEST_INTERVAL = 1000L
         private const val CAMERA_ANIMATION_DURATION = 2000
-        const val SECONDS_TO_RECOLLECT = 14400 // 4 hrs
+        val SECONDS_TO_RECOLLECT = if(DEBUG) 30 else 14400 // 4 hrs
     }
 }
