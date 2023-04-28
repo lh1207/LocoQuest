@@ -12,6 +12,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.GeoPoint
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.locoquest.app.dto.Benchmark
@@ -81,16 +83,22 @@ class FriendsActivity : AppCompatActivity(), View.OnClickListener, View.OnLongCl
         Firebase.firestore.collection("users").document(uid)
             .get().addOnSuccessListener {
 
-                val visited = HashMap<String, Benchmark>()
-                val visitedList = it["visited"] as ArrayList<Benchmark>
-                visitedList.forEach { x -> visited[x.pid] = x }
+                val name = if(it["name"] == null) "" else it["name"] as String
+                val photoUrl = if(it["photoUrl"] == null) "" else it["photoUrl"] as String
+                val balance = if(it["balance"] == null) 0L else it["balance"] as Long
 
-                val friend = User(uid,
-                    it["name"] as String,
-                    it["photoUrl"] as String,
-                    it["balance"] as Long,
-                    visited,
-                    it["uids"] as ArrayList<String>)
+                val visited = HashMap<String, Benchmark>()
+                val visitedList = if(it["visited"] == null) ArrayList() else it["visited"] as ArrayList<HashMap<String, Any>>
+                visitedList.forEach { x ->
+                    val pid = x["pid"] as String
+                    val location = x["location"] as GeoPoint
+                    val lastVisited = x["lastVisited"] as Timestamp
+                    visited[x["pid"] as String] = Benchmark(pid, x["name"] as String, location.latitude, location.longitude, lastVisited.seconds)
+                }
+
+                val uids = if(it["uids"] == null) ArrayList() else it["uids"] as ArrayList<String>
+
+                val friend = User(uid, name, photoUrl, balance, visited, uids)
 
                 profile = Profile(friend, false, this)
                 supportFragmentManager.beginTransaction().replace(R.id.fragment_container, profile!!).commit()

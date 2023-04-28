@@ -51,12 +51,16 @@ class Profile(private val user: User, private val enableEdit: Boolean, private v
     ): View {
         val view = inflater.inflate(R.layout.fragment_profile, container, false)
 
+        view.findViewById<ImageView>(R.id.close_btn).setOnClickListener { profileListener.onClose() }
+
         view.findViewById<TextView>(R.id.friends_tv).text = "Friends (${user.friends.size})"
+
+        view.findViewById<TextView>(R.id.profile_balance).text = user.balance.toString()
 
         benchmarkCount = view.findViewById(R.id.benchmarkCount)
 
         val signBtn = view.findViewById<Button>(R.id.sign_in_out_btn)
-        val editNameBtn = view.findViewById<Button>(R.id.editNameButton)
+        val editNameBtn = view.findViewById<ImageView>(R.id.editNameBtn)
 
         if(enableEdit) {
             signBtn.text =
@@ -73,9 +77,6 @@ class Profile(private val user: User, private val enableEdit: Boolean, private v
         }else {
             signBtn.visibility = View.GONE
             editNameBtn.visibility = View.GONE
-            val closeBtn = view.findViewById<ImageView>(R.id.close_btn)
-            closeBtn.visibility = View.VISIBLE
-            closeBtn.setOnClickListener { profileListener.onClose() }
         }
 
         recyclerView = view.findViewById(R.id.benchmarks)
@@ -140,6 +141,7 @@ class Profile(private val user: User, private val enableEdit: Boolean, private v
         builder.setTitle("Enter Your Name")
 
         val input = EditText(context)
+        input.setText(user.displayName)
         input.inputType = InputType.TYPE_CLASS_TEXT
         input.setPadding((16 * resources.displayMetrics.density).toInt())
         builder.setView(input)

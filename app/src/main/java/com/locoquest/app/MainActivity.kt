@@ -238,7 +238,7 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
     }
 
     override fun onClose() {
-        TODO("Not yet implemented")
+        hideProfile()
     }
 
     private fun displayUserInfo() {

@@ -18,22 +18,36 @@
             android:textStyle="bold"
             android:padding="16dp" />
 
-        <Button
-            android:id="@+id/sign_in_out_btn"
-            android:text="@string/login"
+        <ImageView
+            android:id="@+id/close_btn"
+            android:src="@drawable/close"
             android:layout_margin="8dp"
             android:layout_alignParentEnd="true"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
 
-        <ImageView
-            android:id="@+id/close_btn"
-            android:src="@drawable/close"
-            android:visibility="gone"
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:gravity="center_vertical"
+            android:padding="8dp"
             android:layout_margin="8dp"
-            android:layout_alignParentEnd="true"
+            android:layout_below="@id/titleTextView"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:src="@drawable/coin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:id="@+id/profile_balance"
+                android:text="0"
+                android:layout_marginStart="8dp"
+                android:textSize="24sp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
 
         <ImageView
             android:id="@+id/profileImageView"
@@ -58,12 +72,21 @@
             android:layout_marginTop="8dp"
             android:text="@string/lorem_ipsum" />
 
+        <ImageView
+            android:id="@+id/editNameBtn"
+            android:src="@drawable/edit"
+            android:layout_toEndOf="@id/nameTextView"
+            android:layout_alignTop="@id/nameTextView"
+            android:layout_marginStart="8dp"
+            android:layout_width="16dp"
+            android:layout_height="16dp"/>
+
         <!-- Edit Name Button -->
         <Button
-            android:id="@+id/editNameButton"
+            android:id="@+id/sign_in_out_btn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/edit_name"
+            android:text="@string/login"
             android:layout_below="@id/nameTextView"
             android:layout_centerHorizontal="true"
             android:layout_marginTop="16dp" />
@@ -74,7 +97,7 @@
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="@android:color/darker_gray"
-            android:layout_below="@id/editNameButton"
+            android:layout_below="@id/sign_in_out_btn"
             android:layout_marginTop="24dp" />
 
         <TextView
