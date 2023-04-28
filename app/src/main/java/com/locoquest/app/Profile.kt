@@ -81,7 +81,9 @@ class Profile(private val user: User, private val enableEdit: Boolean, private v
 
         recyclerView = view.findViewById(R.id.benchmarks)
         recyclerView.layoutManager = LinearLayoutManager(context)
-        adapter = BenchmarkAdapter(ArrayList(user.visited.values.toList()), this, this)
+        adapter = BenchmarkAdapter(
+            ArrayList(user.visited.values.toList().sortedByDescending { x-> x.lastVisitedSeconds }),
+            this, this)
         recyclerView.adapter = adapter
         benchmarkCount.text = "(${adapter.itemCount})"
 
