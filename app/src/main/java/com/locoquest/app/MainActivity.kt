@@ -135,7 +135,6 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
                                         auth.currentUser!!.displayName!!,
                                         auth.currentUser!!.photoUrl.toString())
                                     switchUser()
-                                    displayUserInfo()
                                     Log.d(TAG, "signInWithCredential:success")
                                 } else {
                                     Log.w(TAG, "signInWithCredential:failure", task.exception)
@@ -173,7 +172,7 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         this.menu = menu
         menuInflater.inflate(R.menu.main, menu)
-        displayUserInfo()
+        //displayUserInfo()
         return true
     }
 
@@ -262,6 +261,8 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
 
                 override fun onLoadCleared(placeholder: Drawable?) {}
             })
+
+        try{home.balance.text = user.balance.toString()}catch (_:Exception){}
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -275,8 +276,6 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
                 if(tmpUser == null) {
                     userDao.insert(user)
                 }else user = tmpUser
-
-
 
                 Handler(Looper.getMainLooper()).post{
                     supportActionBar?.title = user.displayName
@@ -329,9 +328,10 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
                             Log.d(TAG, it.toString())
                             user.push()
                             home.loadMarkers(true)
+                        }.addOnCompleteListener {
+                            displayUserInfo()
+                            switchingUser = false
                         }
-
-                    switchingUser = false
                 }
             }.start()
     }

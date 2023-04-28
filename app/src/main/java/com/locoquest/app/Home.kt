@@ -21,6 +21,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
@@ -50,6 +51,7 @@ import java.net.UnknownHostException
 class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
 
     var selectedBenchmark: Benchmark? = null
+    lateinit var balance: TextView
     private var googleMap: GoogleMap? = null
     private var selectedMarker: Marker? = null
     private var mapFragment: SupportMapFragment? = null
@@ -143,6 +145,9 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
 
         offlineImg = view.findViewById(R.id.offline_img)
         updateNetworkStatus()
+
+        balance = view.findViewById(R.id.balance)
+        balance.text = user.balance.toString()
 
         return view
     }
@@ -244,6 +249,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
                 markerToBenchmark[marker] = benchmark
                 user.visited[benchmark.pid] = benchmark
                 user.balance++
+                balance.text = user.balance.toString()
                 user.update()
                 marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.hour_glass))
                 marker.snippet = "Collected ${Converters.formatSeconds(benchmark.lastVisitedSeconds)}"
