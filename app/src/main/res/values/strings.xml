@@ -40,5 +40,17 @@
         This is an ad unit ID for an interstitial test ad. Replace with your own interstitial ad unit id.
         For more information, see https://support.google.com/admob/answer/3052638
     <!- -->
-    <string name="interstitial_ad_unit_id">ca-app-pub-3940256099942544/1033173712</string>
+    <string name="coin_collected_interstitial_ad_unit_id">ca-app-pub-1408914358320849/3855105989</string>
+    <string name="interstitial_ad_unit_id_test">ca-app-pub-3940256099942544/1033173712</string>
+
+    <string name="reward_ad_unit_id_test">ca-app-pub-3940256099942544/5224354917</string>
+    <string name="radius_booster_reward_ad_unit_id">ca-app-pub-1408914358320849/2332488368</string>
+
+    <string name="title_activity_radius_booster_ad_mob">RadiusBoosterAdMobActivity</string>
+    <string name="title_activity_store">StoreActivity</string>
+    <!-- Strings used for fragments for navigation -->
+    <string name="first_fragment_label">First Fragment</string>
+    <string name="second_fragment_label">Second Fragment</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
 </resources>

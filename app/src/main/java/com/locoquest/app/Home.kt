@@ -256,6 +256,8 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
                 marker.snippet = "Collected ${Converters.formatSeconds(benchmark.lastVisitedSeconds)}"
                 scheduleSetMarkerIcon(marker, benchmark)
                 Toast.makeText(context, "Coin collected", Toast.LENGTH_SHORT).show()
+
+                startActivity(Intent(requireContext(), CoinCollectedAdMobActivity::class.java))
             }else {
                 marker.snippet = getSnippet(benchmark)
                 Toast.makeText(context, "Not close enough to complete", Toast.LENGTH_SHORT).show()

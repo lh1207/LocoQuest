@@ -16,7 +16,10 @@ import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
+import com.google.android.gms.ads.rewarded.RewardedAd
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 import com.locoquest.app.databinding.ActivityAdMobBinding
+import com.locoquest.app.databinding.ActivityRadiusBoosterAdMobBinding
 
 import java.util.Locale
 
@@ -24,15 +27,11 @@ import java.util.Locale
 private const val TOAST_TEXT = "Test ads are being shown. " +
         "To show live ads, replace the ad unit ID in res/values/strings.xml " +
         "with your own ad unit ID."
-private const val START_LEVEL = 1
 
-class AdMobActivity : AppCompatActivity() {
+class RadiusBoosterAdMobActivity : AppCompatActivity() {
 
-    private var currentLevel: Int = 0
-    private var interstitialAd: InterstitialAd? = null
-    private lateinit var nextLevelButton: Button
-    private lateinit var levelTextView: TextView
-    private val TAG = "AdMobActivity"
+    private var interstitialAd: RewardedAd? = null
+    private val TAG = "RadiusBoosterAdMobActiv"
     private lateinit var binding: ActivityAdMobBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,20 +40,9 @@ class AdMobActivity : AppCompatActivity() {
         binding = ActivityAdMobBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        MobileAds.initialize(
-            this
-        ) { }
+        MobileAds.initialize(this) { }
         // Load the InterstitialAd and set the adUnitId (defined in values/strings.xml).
         loadInterstitialAd()
-
-        // Create the next level button, which tries to show an interstitial when clicked.
-        nextLevelButton = binding.nextLevelButton
-        nextLevelButton.isEnabled = false
-        nextLevelButton.setOnClickListener { showInterstitial() }
-
-        levelTextView = binding.level
-        // Create the text view to show the level number.
-        currentLevel = START_LEVEL
 
         // Toasts the test ad message on the screen. Remove this after defining your own ad unit ID.
         Toast.makeText(this, TOAST_TEXT, Toast.LENGTH_LONG).show()
@@ -62,7 +50,7 @@ class AdMobActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         // Inflate the menu; this adds items to the action bar if it is present.
-        menuInflater.inflate(R.menu.menu_ad_mob, menu)
+        menuInflater.inflate(R.menu.menu_radius_booster_ad_mob, menu)
         return true
     }
 
@@ -74,15 +62,19 @@ class AdMobActivity : AppCompatActivity() {
 
     private fun loadInterstitialAd() {
         val adRequest = AdRequest.Builder().build()
-        InterstitialAd.load(this, getString(R.string.interstitial_ad_unit_id), adRequest,
-            object : InterstitialAdLoadCallback() {
-                override fun onAdLoaded(ad: InterstitialAd) {
+        RewardedAd.load(this, getString(R.string.reward_ad_unit_id_test), adRequest,
+            object : RewardedAdLoadCallback() {
+                override fun onAdLoaded(ad: RewardedAd) {
                     // The interstitialAd reference will be null until
                     // an ad is loaded.
                     interstitialAd = ad
-                    nextLevelButton.isEnabled = true
-                    Toast.makeText(this@AdMobActivity, "onAdLoaded()", Toast.LENGTH_SHORT)
-                        .show()
+                    Toast.makeText(
+                        this@RadiusBoosterAdMobActivity,
+                        "onAdLoaded()",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    showInterstitial()
+
                     ad.fullScreenContentCallback = object : FullScreenContentCallback() {
                         override fun onAdDismissedFullScreenContent() {
                             // Called when fullscreen content is dismissed.
@@ -111,7 +103,6 @@ class AdMobActivity : AppCompatActivity() {
                     // Handle the error
                     Log.i(TAG, loadAdError.message)
                     interstitialAd = null
-                    nextLevelButton.isEnabled = true
                     val error: String = String.format(
                         Locale.ENGLISH,
                         "domain: %s, code: %d, message: %s",
@@ -120,7 +111,7 @@ class AdMobActivity : AppCompatActivity() {
                         loadAdError.message
                     )
                     Toast.makeText(
-                        this@AdMobActivity,
+                        this@RadiusBoosterAdMobActivity,
                         "onAdFailedToLoad() with error: $error", Toast.LENGTH_SHORT
                     )
                         .show()
@@ -131,18 +122,12 @@ class AdMobActivity : AppCompatActivity() {
     private fun showInterstitial() {
         // Show the ad if it"s ready. Otherwise toast and reload the ad.
         if (interstitialAd != null) {
-            interstitialAd!!.show(this)
+            interstitialAd!!.show(this) {
+                //todo - reward user with radius boost
+            }
         } else {
             Toast.makeText(this, "Ad did not load", Toast.LENGTH_SHORT).show()
-            goToNextLevel()
-        }
-    }
-
-    private fun goToNextLevel() {
-        // Show the next level and reload the ad to prepare for the level after.
-        levelTextView.text = "Level " + (++currentLevel)
-        if (interstitialAd == null) {
-            loadInterstitialAd()
+            finish()
         }
     }
 }

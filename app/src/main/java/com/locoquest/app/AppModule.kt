@@ -9,5 +9,6 @@ class AppModule {
         val guest: User = User("0","Guest")
         var user: User = guest
         const val DEBUG = false
+        const val AD_FREE = false
     }
 }
