@@ -6,6 +6,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <TextView
         android:id="@+id/pid"
+        android:text="pid"
         android:textSize="18sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -13,6 +14,7 @@
         android:layout_height="wrap_content"/>
     <TextView
         android:id="@+id/name"
+        android:text="name"
         android:textSize="18sp"
         android:ellipsize="end"
         android:maxLines="1"
@@ -24,8 +26,17 @@
         android:layout_height="wrap_content"/>
     <TextView
         android:id="@+id/latlng"
+        android:text="lat lng"
         android:textSize="16sp"
         app:layout_constraintTop_toBottomOf="@id/pid"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+    <TextView
+        android:id="@+id/last"
+        android:text="last visited"
+        android:textSize="16sp"
+        app:layout_constraintTop_toBottomOf="@id/latlng"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>

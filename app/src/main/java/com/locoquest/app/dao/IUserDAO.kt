@@ -9,9 +9,9 @@ import androidx.room.Update
 import com.locoquest.app.dto.User
 
 @Dao
-interface ILocalUserDAO {
-    @Query("SELECT * FROM user WHERE uid = :id")
-    fun getUser(id: String) : User?
+interface IUserDAO {
+    @Query("SELECT * FROM user WHERE uid = :arg0")
+    fun getUser(arg0: String) : User?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(user: User)

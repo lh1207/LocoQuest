@@ -80,11 +80,18 @@ class FriendsActivity : AppCompatActivity(), View.OnClickListener, View.OnLongCl
         val uid = view?.findViewById<TextView>(R.id.user_id)?.text.toString()
         Firebase.firestore.collection("users").document(uid)
             .get().addOnSuccessListener {
+
+                val visited = HashMap<String, Benchmark>()
+                val visitedList = it["visited"] as ArrayList<Benchmark>
+                visitedList.forEach { x -> visited[x.pid] = x }
+
                 val friend = User(uid,
                     it["name"] as String,
                     it["photoUrl"] as String,
-                    it["pids"] as ArrayList<String>,
+                    it["balance"] as Long,
+                    visited,
                     it["uids"] as ArrayList<String>)
+
                 profile = Profile(friend, false, this)
                 supportFragmentManager.beginTransaction().replace(R.id.fragment_container, profile!!).commit()
                 fab.visibility = View.GONE

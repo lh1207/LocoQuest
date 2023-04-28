@@ -5,7 +5,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClientInstance {
     private var retrofit: Retrofit? = null;
-    private val BASE_URL = "https://geodesy.noaa.gov/api/nde/"
+    private const val BASE_URL = "https://geodesy.noaa.gov/api/nde/"
 
     val retrofitInstance : Retrofit?
         get() {

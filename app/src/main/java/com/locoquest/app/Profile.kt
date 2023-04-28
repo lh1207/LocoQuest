@@ -44,7 +44,6 @@ class Profile(private val user: User, private val enableEdit: Boolean, private v
     private lateinit var recyclerView: RecyclerView
     private lateinit var benchmarkCount: TextView
     private lateinit var name: TextView
-    private val savedBenchmarks: ArrayList<Benchmark> = ArrayList()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -81,16 +80,9 @@ class Profile(private val user: User, private val enableEdit: Boolean, private v
 
         recyclerView = view.findViewById(R.id.benchmarks)
         recyclerView.layoutManager = LinearLayoutManager(context)
-        Thread{
-            val benchmarks = if(user.pids.size > 0) BenchmarkService().getBenchmarks(user.pids.toList()) else emptyList()
-            if(benchmarks.isNullOrEmpty()) return@Thread
-            savedBenchmarks.addAll(benchmarks)
-            adapter = BenchmarkAdapter(savedBenchmarks, this, this)
-            Handler(Looper.getMainLooper()).post{
-                recyclerView.adapter = adapter
-                benchmarkCount.text = "(${savedBenchmarks.size})"
-            }
-        }.start()
+        adapter = BenchmarkAdapter(ArrayList(user.visited.values.toList()), this, this)
+        recyclerView.adapter = adapter
+        benchmarkCount.text = "(${adapter.itemCount})"
 
         Glide.with(this)
             .load(user.photoUrl)
@@ -128,9 +120,9 @@ class Profile(private val user: User, private val enableEdit: Boolean, private v
                 val pid = pidT.substring(0, pidT.length-1)
                 adapter.removeBenchmark(pid)
                 adapter.notifyDataSetChanged()
-                user.pids.remove(pid)
+                user.visited.remove(pid)
                 user.update()
-                benchmarkCount.text = "(${savedBenchmarks.size})"
+                benchmarkCount.text = "(${adapter.itemCount})"
             }
             .show()
         return true
@@ -140,7 +132,7 @@ class Profile(private val user: User, private val enableEdit: Boolean, private v
         if(!enableEdit) return
         val pidT = view?.findViewById<TextView>(R.id.pid)?.text.toString()
         val pid = pidT.substring(0, pidT.length-1)
-        if(user.pids.contains(pid)) profileListener.onBenchmarkClicked(savedBenchmarks.first { x -> x.pid == pid })
+        if(user.visited.contains(pid)) profileListener.onBenchmarkClicked(user.visited[pid]!!)
     }
 
     private fun showEditNameDialog(){

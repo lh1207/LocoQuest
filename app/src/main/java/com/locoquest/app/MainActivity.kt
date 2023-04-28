@@ -30,9 +30,11 @@ import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.GeoPoint
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.locoquest.app.AppModule.Companion.db
@@ -294,18 +296,32 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
                                 return@addOnSuccessListener
                             }
                             Log.d(TAG, "${it.id} => ${it.data}")
+
                             val name = if(it["name"] == null) {
                                 user.push()
                                 user.displayName
                             } else it["name"] as String
+
                             val photoUrl = if(it["photoUrl"] == null) {
                                 if(user.photoUrl == "") user.photoUrl = auth.currentUser?.photoUrl.toString()
                                 user.push()
                                 user.photoUrl
                             } else it["photoUrl"] as String
-                            val pids = if(it["pids"] == null) ArrayList() else it["pids"] as ArrayList<String>
+
+                            val balance = if(it["balance"] == null) user.balance else it["balance"] as Long
+
+                            val visited = HashMap<String, Benchmark>()
+                            val visitedList = if(it["visited"] == null) ArrayList() else it["visited"] as ArrayList<HashMap<String, Any>>
+                            visitedList.forEach { x ->
+                                val pid = x["pid"] as String
+                                val location = x["location"] as GeoPoint
+                                val lastVisited = x["lastVisited"] as Timestamp
+                                visited[x["pid"] as String] = Benchmark(pid, x["name"] as String, location.latitude, location.longitude, lastVisited.seconds)
+                            }
+
                             val uids = if(it["uids"] == null) ArrayList() else it["uids"] as ArrayList<String>
-                            user = User(user.uid, name, photoUrl, pids, uids)
+
+                            user = User(user.uid, name, photoUrl, balance, visited, uids)
                             Thread{ db!!.localUserDAO().update(user)}.start()
                             home.loadMarkers(true)
                         }

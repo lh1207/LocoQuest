@@ -1,7 +1,6 @@
 package com.locoquest.app
 
 import BenchmarkService
-import IBenchmarkService
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
@@ -37,6 +36,7 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.GoogleMap.CancelableCallback
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
@@ -54,6 +54,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     private var selectedMarker: Marker? = null
     private var mapFragment: SupportMapFragment? = null
     private var tracking = true
+    private var monitor = false
     private var loadingMarkers = false
     private var cameraIsBeingMoved = false
     private var notifyUserOfNetwork = true
@@ -145,39 +146,6 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
 
         return view
     }
-    @SuppressLint("MissingPermission")
-    override fun onMapReady(map: GoogleMap) {
-        Log.d("tracker", "map is ready")
-        googleMap = map
-        map.mapType = mapType()
-        map.setOnMarkerClickListener(this)
-        map.setOnCameraIdleListener {
-            Log.d("tracker", "camera stopped moving, loading markers")
-            cameraIsBeingMoved = false
-            loadMarkers()
-        }
-        map.setOnMapClickListener {
-            Log.d("tracker", "map was clicked on")
-            selectedMarker = null
-            layersLayout.visibility = View.GONE
-            Thread{
-                Thread.sleep(500) // wait for direction btn to hide
-                Handler(Looper.getMainLooper()).post{layersFab.visibility = View.VISIBLE}
-            }.start()
-        }
-        map.setOnCameraMoveStartedListener {
-            Log.d("tracker", "camera started moving: tracking:$tracking")
-            updateTrackingStatus(cameraIsBeingMoved)
-            if(!tracking) layersLayout.visibility = View.GONE
-            Log.d("tracker", "end of moving fun: tracking:$tracking")
-        }
-
-        if(tracking) {
-            Log.d("tracker", "initializing map camera")
-            updateCameraWithLastLocation(false)
-        }
-        if(hasLocationPermissions() && isGpsOn()) startLocationUpdates()
-    }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
@@ -215,39 +183,123 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         mapFragment?.onLowMemory()
     }
 
+    @SuppressLint("MissingPermission")
+    override fun onMapReady(map: GoogleMap) {
+        Log.d("tracker", "map is ready")
+        googleMap = map
+        map.mapType = mapType()
+        map.setOnMarkerClickListener(this)
+        map.setOnCameraIdleListener {
+            Log.d("tracker", "camera stopped moving, loading markers")
+            cameraIsBeingMoved = false
+            loadMarkers()
+        }
+        map.setOnMapClickListener {
+            Log.d("tracker", "map was clicked on")
+            selectedMarker = null
+            layersLayout.visibility = View.GONE
+            monitor = false
+            Thread{
+                Thread.sleep(500) // wait for direction btn to hide
+                Handler(Looper.getMainLooper()).post{layersFab.visibility = View.VISIBLE}
+            }.start()
+        }
+        map.setOnCameraMoveStartedListener {
+            Log.d("tracker", "camera started moving: tracking:$tracking")
+            updateTrackingStatus(cameraIsBeingMoved)
+            if(!tracking) layersLayout.visibility = View.GONE
+            Log.d("tracker", "end of moving fun: tracking:$tracking")
+        }
+
+        if(tracking) {
+            Log.d("tracker", "initializing map camera")
+            updateCameraWithLastLocation(false)
+        }
+        if(hasLocationPermissions() && isGpsOn()) startLocationUpdates()
+    }
+
     override fun onMarkerClick(marker: Marker): Boolean {
         Log.d("tracker", "marker clicked on")
+
         selectedMarker = marker
         layersFab.visibility = View.GONE
         layersLayout.visibility = View.GONE
         updateTrackingStatus(false)
+
+        if(!markerToBenchmark.contains(marker)) return true
+        val benchmark = markerToBenchmark[marker]!!
+
+        monitorSelectedMarker()
+
         if(!hasLocationPermissions() || !isGpsOn()) return false
 
         val lastLocation = lastLocation()
-        val inProximity = //true
-            isWithin500Feet(
-            marker.position,
-            LatLng(lastLocation.latitude, lastLocation.longitude)
-        )
+        val inProximity = true
+            //isWithin500Feet(marker.position, LatLng(lastLocation.latitude, lastLocation.longitude))
 
-        if(!markerToBenchmark.contains(marker)) return true
-
-        val benchmark = markerToBenchmark[marker]
-        if(!user.pids.contains(benchmark?.pid)) {
+        //if coin is collectable
+        if(!user.visited.contains(benchmark.pid) || (user.visited.contains(benchmark.pid) && canCollect(benchmark))) {
             if(inProximity) {
-                user.pids.add(benchmark!!.pid)
+                benchmark.lastVisitedSeconds = System.currentTimeMillis() / 1000
+                markerToBenchmark[marker] = benchmark
+                user.visited[benchmark.pid] = benchmark
+                user.balance++
                 user.update()
                 marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.hour_glass))
-                Toast.makeText(context, "Benchmark completed", Toast.LENGTH_SHORT).show()
+                marker.snippet = "Collected ${Converters.formatSeconds(benchmark.lastVisitedSeconds)}"
+                Handler(Looper.getMainLooper()).postDelayed({
+                    try{
+                        marker.setIcon(getMarkerRes(benchmark))
+                    }catch (e: Exception){
+                        Log.e("marker set icon", e.toString())
+                    }
+                }, (SECONDS_TO_RECOLLECT * 1000).toLong())
+                Toast.makeText(context, "Coin collected", Toast.LENGTH_SHORT).show()
             }else {
+                marker.snippet = getSnippet(benchmark)
                 Toast.makeText(context, "Not close enough to complete", Toast.LENGTH_SHORT).show()
             }
+        }else{
+            marker.snippet = getSnippet(benchmark)
         }
 
         // Return false to indicate that we have not consumed the event and that we wish
         // for the default behavior to occur (which is for the camera to move such that the
         // marker is centered and for the marker's info window to open, if it has one).
         return false
+    }
+
+    private fun getSnippet(benchmark: Benchmark) : String{
+        return if (benchmark.lastVisitedSeconds + SECONDS_TO_RECOLLECT > System.currentTimeMillis() / 1000) {
+            val secondsLeft = benchmark.lastVisitedSeconds + SECONDS_TO_RECOLLECT - System.currentTimeMillis() / 1000
+            "Collect in $secondsLeft second(s)"
+        }else if(benchmark.lastVisitedSeconds > 0) "Collected ${Converters.formatSeconds(benchmark.lastVisitedSeconds)}"
+        else "Never collected"
+    }
+
+    private fun monitorSelectedMarker(){
+        if(monitor) return
+        monitor = true
+        Thread{
+            Thread.sleep(1000)
+            while (monitor){
+                Handler(Looper.getMainLooper()).post{
+                    if(selectedMarker == null) {
+                        monitor = false
+                        return@post
+                    }
+                    try {
+                        selectedMarker!!.snippet = getSnippet(markerToBenchmark[selectedMarker]!!)
+                        selectedMarker!!.showInfoWindow()
+                        //selectedMarker!!.setIcon(getMarkerRes(markerToBenchmark[selectedMarker]!!))
+                    }catch (e: Exception){
+                        monitor = false
+                        Log.e("selected marker", e.toString())
+                    }
+                }
+                Thread.sleep(1000)
+            }
+        }.start()
     }
 
     private fun updateTrackingStatus(tracking: Boolean){
@@ -278,22 +330,24 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     }
 
     private fun loadMarkers(){loadMarkers(false)}
-    fun loadMarkers(isUserSwitched: Boolean){
-        Log.d("tracker", "loading markers")
-        goToSelectedBenchmark()
-        if(!isOnline()){
-            if(notifyUserOfNetwork){
-                Toast.makeText(context, "No network: Can't load markers", Toast.LENGTH_SHORT).show()
-                notifyUserOfNetwork = false
-            }
-            return
-        }
-        if((loadingMarkers && !isUserSwitched) || googleMap == null) return
-        loadingMarkers = true
-        val map = googleMap!!
-
+    fun loadMarkers(isUserSwitched: Boolean) {
         try {
+            Log.d("tracker", "loading markers")
+            goToSelectedBenchmark()
+            if (!isOnline()) {
+                if (notifyUserOfNetwork) {
+                    Toast.makeText(context, "No network: Can't load markers", Toast.LENGTH_SHORT)
+                        .show()
+                    notifyUserOfNetwork = false
+                }
+                return
+            }
+            if ((loadingMarkers && !isUserSwitched) || googleMap == null) return
+
+            loadingMarkers = true
+            val map = googleMap!!
             val bounds = map.projection.visibleRegion.latLngBounds
+
             Thread {
                 try {
                     val benchmarkList = BenchmarkService().getBenchmarks(bounds)
@@ -306,34 +360,33 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
                         return@Thread
                     }
 
-                    if(isUserSwitched)
-                        Handler(Looper.getMainLooper()).post {
-                            markerToBenchmark.keys.forEach { it.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.coin)) }
-                        }
-
                     val newBenchmarks = mutableListOf<Benchmark>()
                     val existingBenchmarks = mutableListOf<Benchmark>()
 
                     // Find new and existing benchmarks
-                    for (benchmark in benchmarkList)
-                        if (benchmarkToMarker.keys.contains(benchmark))
-                            existingBenchmarks.add(benchmark)
-                        else newBenchmarks.add(benchmark)
+                    for (benchmark in benchmarkList) {
+                        val mark = if (user.visited.containsKey(benchmark.pid))
+                            user.visited[benchmark.pid]!! else benchmark
+                        if (benchmarkToMarker.keys.contains(mark))
+                            existingBenchmarks.add(mark)
+                        else newBenchmarks.add(mark)
+                    }
 
                     // Update marker colors after user switch
-                    if(isUserSwitched) {
-                        existingBenchmarks.forEach {
-                            if (user.pids.contains(it.pid)) Handler(Looper.getMainLooper()).post {
-                                benchmarkToMarker[it]?.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.hour_glass))
+                    if (isUserSwitched) {
+                        Handler(Looper.getMainLooper()).post {
+                            existingBenchmarks.forEach {
+                                benchmarkToMarker[it]?.setIcon(getMarkerRes(it))
                             }
                         }
                     }
 
                     // Remove markers for deleted benchmarks
                     val iterator = benchmarkToMarker.iterator()
+                    val pids = benchmarkList.map { it.pid }
                     while (iterator.hasNext()) {
                         val entry = iterator.next()
-                        if (!benchmarkList.contains(entry.key)) {
+                        if (!pids.contains(entry.key.pid)) {
                             val marker = entry.value
                             iterator.remove()
                             markerToBenchmark.remove(marker)
@@ -348,10 +401,10 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
                         loadingMarkers = false
                         Log.d("tracker", "markers loaded")
                     }
-                }catch (e: ConcurrentModificationException){
+                } catch (e: ConcurrentModificationException) {
                     loadingMarkers = false
                     Log.e("LoadMarkers", e.toString())
-                }catch (e: UnknownHostException){
+                } catch (e: UnknownHostException) {
                     loadingMarkers = false
                     Log.e("LoadMarkers", e.toString())
                 }
@@ -362,8 +415,14 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         }
     }
 
+    private fun getMarkerRes(benchmark: Benchmark) : BitmapDescriptor {
+        return BitmapDescriptorFactory.fromResource(
+            if (user.visited.contains(benchmark.pid) && collected(benchmark)) R.drawable.hour_glass
+            else R.drawable.coin)
+    }
+
     private fun isSameBenchmarks(benchmarkList: List<Benchmark>) : Boolean{
-        return benchmarkList.sortedBy { x -> x.pid } == ArrayList(markerToBenchmark.values.toList()).sortedBy { x -> x.pid }
+        return benchmarkList.map { it.pid }.sorted() == markerToBenchmark.values.map { it.pid }.sorted()
     }
 
     private fun goToSelectedBenchmark() {
@@ -375,8 +434,8 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
             googleMap?.moveCamera(
                 CameraUpdateFactory.newLatLngZoom(
                     LatLng(
-                        benchmark.lat.toDouble(),
-                        benchmark.lon.toDouble()
+                        benchmark.lat,
+                        benchmark.lon
                     ), 15f
                 )
             )
@@ -393,7 +452,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
 
     private fun addBenchmarkToMap(benchmark: Benchmark) : Marker? {
         var options = toMarkerOptions(benchmark)
-        options = if(user.pids.contains(benchmark.pid))
+        options = if(user.visited.contains(benchmark.pid) && collected(user.visited[benchmark.pid]!!))
             options.icon(BitmapDescriptorFactory.fromResource(R.drawable.hour_glass))
         else options.icon(BitmapDescriptorFactory.fromResource(R.drawable.coin))
         val marker = googleMap!!.addMarker(options)
@@ -402,6 +461,14 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
             benchmarkToMarker[benchmark] = marker
         }
         return marker
+    }
+
+    private fun collected(benchmark: Benchmark) : Boolean{
+        return benchmark.lastVisitedSeconds + SECONDS_TO_RECOLLECT > System.currentTimeMillis() / 1000
+    }
+
+    private fun canCollect(benchmark: Benchmark) : Boolean{
+        return benchmark.lastVisitedSeconds + SECONDS_TO_RECOLLECT < System.currentTimeMillis() / 1000
     }
 
     @SuppressLint("MissingPermission")
@@ -546,10 +613,10 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     }
 
     companion object{
-        private const val HUE = 200f
         private const val DEFAULT_ZOOM = 15f
         private const val TRACKING_INTERVAL = 5000L
         private const val TRACKING_FASTEST_INTERVAL = 1000L
         private const val CAMERA_ANIMATION_DURATION = 2000
+        const val SECONDS_TO_RECOLLECT = 10//14400 = 4 hours
     }
 }
