@@ -9,6 +9,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -20,7 +21,7 @@ import com.locoquest.app.dto.Benchmark
 import com.locoquest.app.dto.User
 
 class FriendsActivity : AppCompatActivity(), View.OnClickListener, View.OnLongClickListener,
-    Profile.ProfileListener {
+    Profile.ProfileListener, ISecondaryFragment {
     private val users: ArrayList<User> = ArrayList()
     private lateinit var fab: FloatingActionButton
     private lateinit var adapter: FriendsAdapter
@@ -86,21 +87,21 @@ class FriendsActivity : AppCompatActivity(), View.OnClickListener, View.OnLongCl
                 val name = if(it["name"] == null) "" else it["name"] as String
                 val photoUrl = if(it["photoUrl"] == null) "" else it["photoUrl"] as String
                 val balance = if(it["balance"] == null) 0L else it["balance"] as Long
+                val lastRadiusBoost = if(it["lastRadiusBoost"] == null) Timestamp(0,0)
+                                      else it["lastRadiusBoost"] as Timestamp
 
                 val visited = HashMap<String, Benchmark>()
                 val visitedList = if(it["visited"] == null) ArrayList() else it["visited"] as ArrayList<HashMap<String, Any>>
                 visitedList.forEach { x ->
                     val pid = x["pid"] as String
-                    val location = x["location"] as GeoPoint
-                    val lastVisited = x["lastVisited"] as Timestamp
-                    visited[x["pid"] as String] = Benchmark(pid, x["name"] as String, location.latitude, location.longitude, lastVisited.seconds)
+                    visited[pid] = Benchmark.new(pid, x["name"] as String, x["location"] as GeoPoint, x["lastVisited"] as Timestamp)
                 }
 
-                val uids = if(it["uids"] == null) ArrayList() else it["uids"] as ArrayList<String>
+                val friends = if(it["friends"] == null) ArrayList() else it["friends"] as ArrayList<String>
 
-                val friend = User(uid, name, photoUrl, balance, visited, uids)
+                val friend = User(uid, name, photoUrl, balance, lastRadiusBoost, visited, friends)
 
-                profile = Profile(friend, false, this)
+                profile = Profile(friend, false, this, this)
                 supportFragmentManager.beginTransaction().replace(R.id.fragment_container, profile!!).commit()
                 fab.visibility = View.GONE
             }
@@ -178,9 +179,8 @@ class FriendsActivity : AppCompatActivity(), View.OnClickListener, View.OnLongCl
         TODO("Not yet implemented")
     }
 
-    override fun onClose() {
-        supportFragmentManager.beginTransaction().remove(profile!!).commit()
-        profile = null
+    override fun onClose(fragment: Fragment) {
+        supportFragmentManager.beginTransaction().remove(fragment).commit()
         if(user == AppModule.user) fab.visibility = View.VISIBLE
     }
 

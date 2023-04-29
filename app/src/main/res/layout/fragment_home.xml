@@ -13,6 +13,7 @@
         android:layout_height="match_parent" />
 
     <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/linear_layout_compat"
         android:background="@drawable/balance_bg"
         android:gravity="center_vertical"
         android:padding="8dp"
@@ -39,7 +40,16 @@
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 
-
+    <ImageView
+        android:id="@+id/mushroom"
+        app:layout_constraintTop_toTopOf="@id/linear_layout_compat"
+        app:layout_constraintBottom_toBottomOf="@id/linear_layout_compat"
+        app:layout_constraintStart_toEndOf="@id/linear_layout_compat"
+        android:src="@drawable/radius_booster"
+        android:adjustViewBounds="true"
+        android:scaleType="fitCenter"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"/>
 
     <ImageView
         android:id="@+id/offline_img"

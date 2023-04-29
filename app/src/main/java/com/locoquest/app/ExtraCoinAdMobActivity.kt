@@ -5,19 +5,15 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
-import com.google.android.gms.ads.interstitial.InterstitialAd
-import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
-import android.widget.Button
-import android.widget.TextView
-
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
-import com.locoquest.app.databinding.ActivityAdMobBinding
-
+import com.google.android.gms.ads.rewarded.RewardedAd
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
+import com.locoquest.app.AppModule.Companion.user
 import java.util.Locale
 
 // Remove the line below after defining your own ad unit ID.
@@ -25,21 +21,19 @@ private const val TOAST_TEXT = "Test ads are being shown. " +
         "To show live ads, replace the ad unit ID in res/values/strings.xml " +
         "with your own ad unit ID."
 
-class CoinCollectedAdMobActivity : AppCompatActivity() {
+class ExtraCoinAdMobActivity : AppCompatActivity() {
 
-    private var interstitialAd: InterstitialAd? = null
+    private var rewardedAd: RewardedAd? = null
     private val TAG = "AdMobActivity"
-    private lateinit var binding: ActivityAdMobBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        binding = ActivityAdMobBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        setContentView(R.layout.activity_ad_mob)
 
         MobileAds.initialize(this) { }
         // Load the InterstitialAd and set the adUnitId (defined in values/strings.xml).
-        loadInterstitialAd()
+        loadRewardAd()
 
         // Toasts the test ad message on the screen. Remove this after defining your own ad unit ID.
         Toast.makeText(this, TOAST_TEXT, Toast.LENGTH_LONG).show()
@@ -57,15 +51,15 @@ class CoinCollectedAdMobActivity : AppCompatActivity() {
             else -> super.onOptionsItemSelected(item)
         }
 
-    private fun loadInterstitialAd() {
+    private fun loadRewardAd() {
         val adRequest = AdRequest.Builder().build()
-        InterstitialAd.load(this, getString(R.string.interstitial_ad_unit_id_test), adRequest,
-            object : InterstitialAdLoadCallback() {
-                override fun onAdLoaded(ad: InterstitialAd) {
+        RewardedAd.load(this, getString(R.string.reward_ad_unit_id_test), adRequest,
+            object : RewardedAdLoadCallback() {
+                override fun onAdLoaded(ad: RewardedAd) {
                     // The interstitialAd reference will be null until
                     // an ad is loaded.
-                    interstitialAd = ad
-                    Toast.makeText(this@CoinCollectedAdMobActivity, "onAdLoaded()", Toast.LENGTH_SHORT).show()
+                    rewardedAd = ad
+                    Toast.makeText(this@ExtraCoinAdMobActivity, "onAdLoaded()", Toast.LENGTH_SHORT).show()
                     showInterstitial()
 
                     ad.fullScreenContentCallback = object : FullScreenContentCallback() {
@@ -73,7 +67,7 @@ class CoinCollectedAdMobActivity : AppCompatActivity() {
                             // Called when fullscreen content is dismissed.
                             // Make sure to set your reference to null so you don't
                             // show it a second time.
-                            interstitialAd = null
+                            rewardedAd = null
                             Log.d(TAG, "The ad was dismissed.")
                             finish()
                         }
@@ -82,7 +76,7 @@ class CoinCollectedAdMobActivity : AppCompatActivity() {
                             // Called when fullscreen content failed to show.
                             // Make sure to set your reference to null so you don't
                             // show it a second time.
-                            interstitialAd = null
+                            rewardedAd = null
                             Log.d(TAG, "The ad failed to show.")
                             finish()
                         }
@@ -98,7 +92,7 @@ class CoinCollectedAdMobActivity : AppCompatActivity() {
                 override fun onAdFailedToLoad(loadAdError: LoadAdError) {
                     // Handle the error
                     Log.i(TAG, loadAdError.message)
-                    interstitialAd = null
+                    rewardedAd = null
                     val error: String = String.format(
                         Locale.ENGLISH,
                         "domain: %s, code: %d, message: %s",
@@ -107,7 +101,7 @@ class CoinCollectedAdMobActivity : AppCompatActivity() {
                         loadAdError.message
                     )
                     Toast.makeText(
-                        this@CoinCollectedAdMobActivity,
+                        this@ExtraCoinAdMobActivity,
                         "onAdFailedToLoad() with error: $error", Toast.LENGTH_SHORT
                     )
                         .show()
@@ -117,8 +111,12 @@ class CoinCollectedAdMobActivity : AppCompatActivity() {
 
     private fun showInterstitial() {
         // Show the ad if it"s ready. Otherwise toast and reload the ad.
-        if (interstitialAd != null) {
-            interstitialAd!!.show(this)
+        if (rewardedAd != null) {
+            rewardedAd!!.show(this){
+                user.balance++
+                user.update()
+                finish()
+            }
         } else {
             Toast.makeText(this, "Ad did not load", Toast.LENGTH_SHORT).show()
             finish()

@@ -43,13 +43,14 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.firebase.Timestamp
 import com.locoquest.app.AppModule.Companion.DEBUG
 import com.locoquest.app.AppModule.Companion.user
 import com.locoquest.app.Converters.Companion.toMarkerOptions
 import com.locoquest.app.dto.Benchmark
 import java.net.UnknownHostException
 
-class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
+class Home(private val homeListener: HomeListener) : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
 
     var selectedBenchmark: Benchmark? = null
     lateinit var balance: TextView
@@ -68,6 +69,11 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     private lateinit var layersFab: FloatingActionButton
     private lateinit var myLocation: FloatingActionButton
     private lateinit var fusedLocationClient: FusedLocationProviderClient
+
+    interface HomeListener {
+        fun onMushroomClicked()
+        fun onCoinCollected(benchmark: Benchmark)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -149,6 +155,8 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
 
         balance = view.findViewById(R.id.balance)
         balance.text = user.balance.toString()
+
+        view.findViewById<ImageView>(R.id.mushroom).setOnClickListener { homeListener.onMushroomClicked() }
 
         return view
     }
@@ -246,18 +254,16 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
         //if coin is collectable
         if(!user.visited.contains(benchmark.pid) || (user.visited.contains(benchmark.pid) && canCollect(benchmark))) {
             if(inProximity) {
-                benchmark.lastVisitedSeconds = System.currentTimeMillis() / 1000
+                benchmark.lastVisited = Timestamp.now().seconds
                 markerToBenchmark[marker] = benchmark
                 user.visited[benchmark.pid] = benchmark
                 user.balance++
                 balance.text = user.balance.toString()
                 user.update()
                 marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.hour_glass_6))
-                marker.snippet = "Collected ${Converters.formatSeconds(benchmark.lastVisitedSeconds)}"
+                marker.snippet = "Collected ${Converters.formatSeconds(benchmark.lastVisited)}"
                 scheduleSetMarkerIcon(marker, benchmark)
-                Toast.makeText(context, "Coin collected", Toast.LENGTH_SHORT).show()
-
-                startActivity(Intent(requireContext(), CoinCollectedAdMobActivity::class.java))
+                homeListener.onCoinCollected(benchmark)
             }else {
                 marker.snippet = getSnippet(benchmark)
                 Toast.makeText(context, "Not close enough to complete", Toast.LENGTH_SHORT).show()
@@ -293,10 +299,10 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
 
 
     private fun getSnippet(benchmark: Benchmark) : String{
-        return if (benchmark.lastVisitedSeconds + SECONDS_TO_RECOLLECT > System.currentTimeMillis() / 1000) {
-            val secondsLeft = benchmark.lastVisitedSeconds + SECONDS_TO_RECOLLECT - System.currentTimeMillis() / 1000
+        return if (benchmark.lastVisited + SECONDS_TO_RECOLLECT > System.currentTimeMillis() / 1000) {
+            val secondsLeft = benchmark.lastVisited + SECONDS_TO_RECOLLECT - System.currentTimeMillis() / 1000
             "Collect in ${toCountdownFormat(secondsLeft)}"
-        }else if(benchmark.lastVisitedSeconds > 0) "Collected ${Converters.formatSeconds(benchmark.lastVisitedSeconds)}"
+        }else if(benchmark.lastVisited > 0) "Collected ${Converters.formatSeconds(benchmark.lastVisited)}"
         else "Never collected"
     }
 
@@ -444,7 +450,7 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     private fun getMarkerRes(benchmark: Benchmark) : BitmapDescriptor {
         return BitmapDescriptorFactory.fromResource(
             if (user.visited.contains(benchmark.pid) && collected(benchmark)) {
-                val secondsLeft = benchmark.lastVisitedSeconds + SECONDS_TO_RECOLLECT - System.currentTimeMillis() / 1000
+                val secondsLeft = benchmark.lastVisited + SECONDS_TO_RECOLLECT - System.currentTimeMillis() / 1000
                 when(mapToRange(secondsLeft, IntRange(0, SECONDS_TO_RECOLLECT), IntRange(0,6))){
                     0 -> R.drawable.hour_glass_0
                     1 -> R.drawable.hour_glass_1
@@ -503,11 +509,11 @@ class Home : Fragment(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     }
 
     private fun collected(benchmark: Benchmark) : Boolean{
-        return benchmark.lastVisitedSeconds + SECONDS_TO_RECOLLECT > System.currentTimeMillis() / 1000
+        return benchmark.lastVisited + SECONDS_TO_RECOLLECT > System.currentTimeMillis() / 1000
     }
 
     private fun canCollect(benchmark: Benchmark) : Boolean{
-        return benchmark.lastVisitedSeconds + SECONDS_TO_RECOLLECT < System.currentTimeMillis() / 1000
+        return benchmark.lastVisited + SECONDS_TO_RECOLLECT < System.currentTimeMillis() / 1000
     }
 
     @SuppressLint("MissingPermission")

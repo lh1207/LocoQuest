@@ -1,12 +1,9 @@
 package com.locoquest.app
 
-import BenchmarkService
 import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.drawable.Drawable
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
@@ -32,13 +29,15 @@ import com.locoquest.app.dto.Benchmark
 import com.locoquest.app.dto.User
 
 
-class Profile(private val user: User, private val enableEdit: Boolean, private val profileListener: ProfileListener) : Fragment(), OnLongClickListener, OnClickListener {
+class Profile(private val user: User,
+              private val enableEdit: Boolean,
+              private val fragmentListener: ISecondaryFragment,
+              private val profileListener: ProfileListener) : Fragment(), OnLongClickListener, OnClickListener {
 
     interface ProfileListener {
         fun onBenchmarkClicked(benchmark: Benchmark)
         fun onLogin()
         fun onSignOut()
-        fun onClose()
     }
     private lateinit var adapter: BenchmarkAdapter
     private lateinit var recyclerView: RecyclerView
@@ -51,7 +50,7 @@ class Profile(private val user: User, private val enableEdit: Boolean, private v
     ): View {
         val view = inflater.inflate(R.layout.fragment_profile, container, false)
 
-        view.findViewById<ImageView>(R.id.close_btn).setOnClickListener { profileListener.onClose() }
+        view.findViewById<ImageView>(R.id.close_btn).setOnClickListener { fragmentListener.onClose(this) }
 
         view.findViewById<TextView>(R.id.friends_tv).text = "Friends (${user.friends.size})"
 
@@ -82,7 +81,7 @@ class Profile(private val user: User, private val enableEdit: Boolean, private v
         recyclerView = view.findViewById(R.id.benchmarks)
         recyclerView.layoutManager = LinearLayoutManager(context)
         adapter = BenchmarkAdapter(
-            ArrayList(user.visited.values.toList().sortedByDescending { x-> x.lastVisitedSeconds }),
+            ArrayList(user.visited.values.toList().sortedByDescending { x-> x.lastVisited }),
             this, this)
         recyclerView.adapter = adapter
         benchmarkCount.text = "(${adapter.itemCount})"

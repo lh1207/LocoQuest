@@ -40,7 +40,7 @@
             android:exported="false"
             android:theme="@android:style/Theme.Translucent" />
         <activity
-            android:name=".CoinCollectedAdMobActivity"
+            android:name=".ExtraCoinAdMobActivity"
             android:exported="false"
             android:label="@string/title_activity_ad_mob" />
         <activity

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@drawable/rounded_corners_bg"
+    android:layout_gravity="center"
+    android:padding="24dp"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <ImageView
+        android:id="@+id/close_dialog_btn"
+        android:src="@drawable/close"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_width="32dp"
+        android:layout_height="32dp"/>
+
+    <TextView
+        android:id="@+id/msg"
+        android:text="Watch an ad to get an extra coin?"
+        android:textSize="24sp"
+        app:layout_constraintTop_toBottomOf="@id/close_dialog_btn"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <Button
+        android:id="@+id/watch_ad_for_extra_coin_btn"
+        app:layout_constraintTop_toBottomOf="@id/msg"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/rounded_corners_bg"
+        android:drawableLeft="@drawable/coin"
+        android:text="Watch Ad"/>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

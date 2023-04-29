@@ -8,7 +8,7 @@ class AppModule {
         var db: DB? = null
         val guest: User = User("0","Guest")
         var user: User = guest
-        const val DEBUG = false
+        const val DEBUG = true
         const val AD_FREE = false
     }
 }

@@ -18,9 +18,11 @@ import android.os.Looper
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
 import androidx.room.Room
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
@@ -43,15 +45,17 @@ import com.locoquest.app.AppModule.Companion.user
 import com.locoquest.app.dao.DB
 import com.locoquest.app.dto.Benchmark
 import com.locoquest.app.dto.User
+import kotlin.math.max
 
 
-class MainActivity : AppCompatActivity(), Profile.ProfileListener {
+class MainActivity : AppCompatActivity(), ISecondaryFragment, Profile.ProfileListener, Home.HomeListener,
+    CoinCollectedDialog.IWatchAdButtonClickListener {
 
     private val auth = FirebaseAuth.getInstance()
     private lateinit var oneTapClient: SignInClient
     private lateinit var signUpRequest: BeginSignInRequest
     private lateinit var menu: Menu
-    private var home: Home = Home()
+    private lateinit var home: Home
     private var profile: Profile? = null
     private var switchingUser = false
     private val fDb = Firebase.firestore
@@ -61,7 +65,8 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        supportFragmentManager.beginTransaction().replace(R.id.home_container, home).commit()
+        home = Home(this)
+        supportFragmentManager.beginTransaction().replace(R.id.primary_container, home).commit()
 
         // Firebase Sign-in
         oneTapClient = Identity.getSignInClient(this)
@@ -186,8 +191,8 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
         return when (item.itemId) {
             R.id.menu_item_account -> {
                 if (profile == null) {
-                    profile = Profile(user, true,this)
-                    supportFragmentManager.beginTransaction().replace(R.id.profile_container, profile!!).commit()
+                    profile = Profile(user, true,this, this)
+                    supportFragmentManager.beginTransaction().replace(R.id.secondary_container, profile!!).commit()
                 } else {
                     hideProfile()
                 }
@@ -201,6 +206,15 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
         hideProfile()
         home.selectedBenchmark = benchmark
         home.loadMarkers(false)
+    }
+
+    override fun onCoinCollected(benchmark: Benchmark) {
+        Toast.makeText(this, "Coin collected", Toast.LENGTH_SHORT).show()
+        supportFragmentManager.beginTransaction().replace(R.id.secondary_container, CoinCollectedDialog(this, this)).commit()
+    }
+
+    override fun onWatchAdButtonClicked() {
+        startActivity(Intent(this, ExtraCoinAdMobActivity::class.java))
     }
 
     override fun onLogin() {
@@ -237,8 +251,12 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
         }
     }
 
-    override fun onClose() {
-        hideProfile()
+    override fun onClose(fragment: Fragment) {
+        supportFragmentManager.beginTransaction().remove(fragment).commit()
+    }
+
+    override fun onMushroomClicked() {
+        supportFragmentManager.beginTransaction().replace(R.id.secondary_container, Store(this)).commit()
     }
 
     private fun displayUserInfo() {
@@ -296,32 +314,42 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
                             }
                             Log.d(TAG, "${it.id} => ${it.data}")
 
-                            val name = if(it["name"] == null) {
-                                user.push()
-                                user.displayName
-                            } else it["name"] as String
+                            val name = if(it["name"] == null) user.displayName else it["name"] as String
 
                             val photoUrl = if(it["photoUrl"] == null) {
-                                if(user.photoUrl == "") user.photoUrl = auth.currentUser?.photoUrl.toString()
-                                user.push()
+                                user.photoUrl = auth.currentUser?.photoUrl.toString()
                                 user.photoUrl
                             } else it["photoUrl"] as String
 
-                            val balance = if(it["balance"] == null) user.balance else it["balance"] as Long
+                            val lastRadiusBoost = if(it["lastRadiusBoost"] == null) user.lastRadiusBoost
+                            else {
+                                val tmpVal = it["lastRadiusBoost"] as Timestamp
+                                if(tmpVal.seconds > user.lastRadiusBoost.seconds) tmpVal
+                                else user.lastRadiusBoost
+                            }
 
-                            val visited = HashMap<String, Benchmark>()
+                            val balance = if(it["balance"] == null) user.balance
+                            else max(user.balance, it["balance"] as Long)
+
+                            var visited = HashMap<String, Benchmark>()
                             val visitedList = if(it["visited"] == null) ArrayList() else it["visited"] as ArrayList<HashMap<String, Any>>
                             visitedList.forEach { x ->
                                 val pid = x["pid"] as String
-                                val location = x["location"] as GeoPoint
-                                val lastVisited = x["lastVisited"] as Timestamp
-                                visited[x["pid"] as String] = Benchmark(pid, x["name"] as String, location.latitude, location.longitude, lastVisited.seconds)
+                                visited[pid] = Benchmark.new(
+                                    pid,
+                                    x["name"] as String,
+                                    x["location"] as GeoPoint,
+                                    x["lastVisited"] as Timestamp
+                                )
                             }
+                            if(!visited.isNullOrEmpty() && !user.visited.isNullOrEmpty() &&
+                                visited.values.sortedByDescending { x -> x.lastVisited }[0].lastVisited < user.visited.values.sortedByDescending { x -> x.lastVisited }[0].lastVisited)
+                                visited = user.visited
 
-                            val uids = if(it["uids"] == null) ArrayList() else it["uids"] as ArrayList<String>
+                            val friends = if(it["friends"] == null) ArrayList() else it["friends"] as ArrayList<String>
 
-                            user = User(user.uid, name, photoUrl, balance, visited, uids)
-                            Thread{ db!!.localUserDAO().update(user)}.start()
+                            user = User(user.uid, name, photoUrl, balance, lastRadiusBoost, visited, friends)
+                            user.update()
                             home.loadMarkers(true)
                         }
                         .addOnFailureListener{

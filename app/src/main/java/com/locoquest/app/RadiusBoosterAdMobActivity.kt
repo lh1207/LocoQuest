@@ -5,11 +5,6 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
-import com.google.android.gms.ads.interstitial.InterstitialAd
-import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
-import android.widget.Button
-import android.widget.TextView
-
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
@@ -18,9 +13,8 @@ import android.view.MenuItem
 import android.widget.Toast
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
-import com.locoquest.app.databinding.ActivityAdMobBinding
-import com.locoquest.app.databinding.ActivityRadiusBoosterAdMobBinding
-
+import com.google.firebase.Timestamp
+import com.locoquest.app.AppModule.Companion.user
 import java.util.Locale
 
 // Remove the line below after defining your own ad unit ID.
@@ -32,13 +26,11 @@ class RadiusBoosterAdMobActivity : AppCompatActivity() {
 
     private var interstitialAd: RewardedAd? = null
     private val TAG = "RadiusBoosterAdMobActiv"
-    private lateinit var binding: ActivityAdMobBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        binding = ActivityAdMobBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        setContentView(R.layout.activity_ad_mob)
 
         MobileAds.initialize(this) { }
         // Load the InterstitialAd and set the adUnitId (defined in values/strings.xml).
@@ -123,7 +115,8 @@ class RadiusBoosterAdMobActivity : AppCompatActivity() {
         // Show the ad if it"s ready. Otherwise toast and reload the ad.
         if (interstitialAd != null) {
             interstitialAd!!.show(this) {
-                //todo - reward user with radius boost
+                user.lastRadiusBoost = Timestamp.now()
+                user.update()
             }
         } else {
             Toast.makeText(this, "Ad did not load", Toast.LENGTH_SHORT).show()
