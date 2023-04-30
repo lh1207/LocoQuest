@@ -1,6 +1,8 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/rounded_corners_bg"
+    android:layout_margin="12dp"
     xmlns:tools="http://schemas.android.com/tools">
 
     <RelativeLayout
@@ -9,12 +11,43 @@
         <!-- Title -->
         <TextView
             android:id="@+id/titleTextView"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/profile_text"
             android:textSize="24sp"
             android:textStyle="bold"
             android:padding="16dp" />
+
+        <ImageView
+            android:id="@+id/close_btn"
+            android:src="@drawable/close"
+            android:layout_margin="8dp"
+            android:layout_alignParentEnd="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:gravity="center_vertical"
+            android:padding="8dp"
+            android:layout_margin="8dp"
+            android:layout_below="@id/titleTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:src="@drawable/coin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:id="@+id/profile_balance"
+                android:text="0"
+                android:layout_marginStart="8dp"
+                android:textSize="24sp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
 
         <ImageView
             android:id="@+id/profileImageView"
@@ -39,42 +72,84 @@
             android:layout_marginTop="8dp"
             android:text="@string/lorem_ipsum" />
 
-        <!-- Divider -->
-        <View
-            android:id="@+id/divider"
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@android:color/darker_gray"
-            android:layout_below="@id/editNameButton"
-            android:layout_marginTop="24dp" />
+        <ImageView
+            android:id="@+id/editNameBtn"
+            android:src="@drawable/edit"
+            android:layout_toEndOf="@id/nameTextView"
+            android:layout_alignTop="@id/nameTextView"
+            android:layout_marginStart="8dp"
+            android:layout_width="16dp"
+            android:layout_height="16dp"/>
 
         <!-- Edit Name Button -->
         <Button
-            android:id="@+id/editNameButton"
+            android:id="@+id/sign_in_out_btn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/edit_name"
+            android:text="@string/login"
             android:layout_below="@id/nameTextView"
             android:layout_centerHorizontal="true"
             android:layout_marginTop="16dp" />
 
+        <!-- Divider -->
+        <View
+            android:id="@+id/divider1"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/darker_gray"
+            android:layout_below="@id/sign_in_out_btn"
+            android:layout_marginTop="24dp" />
+
+        <TextView
+            android:id="@+id/friends_tv"
+            android:text="Friends"
+            android:textStyle="bold"
+            android:textSize="24sp"
+            android:padding="16dp"
+            android:layout_below="@id/divider1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <ImageView
+            android:src="@drawable/chevron_right"
+            android:layout_alignParentEnd="true"
+            android:layout_alignBottom="@id/friends_tv"
+            android:layout_alignTop="@id/friends_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <View
+            android:id="@+id/divider2"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/darker_gray"
+            android:layout_below="@id/friends_tv" />
+
         <!-- Completed Benchmarks -->
         <TextView
-            android:id="@+id/completedBenchmarksTextView"
-            android:layout_width="match_parent"
+            android:id="@+id/visitedBenchmarksText"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="16dp"
-            android:text="@string/completed_benchmarks"
-            android:layout_below="@id/divider"
+            android:text="@string/visited_benchmarks"
+            android:layout_below="@id/divider2"
             android:textSize="24sp"
             android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/benchmarkCount"
+            android:textSize="24sp"
+            android:layout_toEndOf="@id/visitedBenchmarksText"
+            android:layout_alignBaseline="@id/visitedBenchmarksText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/benchmarks"
             tools:listitem="@layout/benchmark"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_below="@+id/completedBenchmarksTextView"
+            android:layout_below="@+id/visitedBenchmarksText"
             android:layout_alignParentBottom="true" />
 
     </RelativeLayout>

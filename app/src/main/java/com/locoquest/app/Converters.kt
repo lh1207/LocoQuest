@@ -6,9 +6,23 @@ import com.google.android.gms.maps.model.MarkerOptions
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.locoquest.app.dto.Benchmark
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class Converters {
     private val gson = Gson()
+
+    @TypeConverter
+    fun fromArrayListString(value: ArrayList<String>): String {
+        return gson.toJson(value)
+    }
+
+    @TypeConverter
+    fun toArrayListString(value: String): ArrayList<String> {
+        val listType = object : TypeToken<ArrayList<String>>() {}.type
+        return gson.fromJson(value, listType)
+    }
 
     @TypeConverter
     fun fromBenchmarks(value: HashMap<String, Benchmark>): String {
@@ -26,12 +40,17 @@ class Converters {
             return MarkerOptions()
                 .position(
                     LatLng(
-                        benchmark.lat.toDouble(),
-                        benchmark.lon.toDouble()
+                        benchmark.lat,
+                        benchmark.lon
                     )
                 )
                 .title(benchmark.name)
-                .snippet("PID: ${benchmark.pid}\nOrtho Height: ${benchmark.orthoHt}")
+        }
+
+        fun formatSeconds(seconds: Long): String {
+            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+            val date = Date(seconds * 1000)
+            return sdf.format(date)
         }
     }
 }

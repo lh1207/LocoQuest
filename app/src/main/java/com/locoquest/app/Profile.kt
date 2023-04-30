@@ -1,8 +1,12 @@
 package com.locoquest.app
 
+import BenchmarkService
 import android.app.AlertDialog
+import android.content.Intent
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
@@ -23,16 +27,23 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.bumptech.glide.request.target.CustomTarget
-import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.firebase.auth.FirebaseAuth
-import com.locoquest.app.AppModule.Companion.user
+import com.locoquest.app.AppModule.Companion.guest
+import com.locoquest.app.dto.Benchmark
 import com.locoquest.app.dto.User
 
 
-class Profile : Fragment(), OnLongClickListener, OnClickListener {
+class Profile(private val user: User, private val enableEdit: Boolean, private val profileListener: ProfileListener) : Fragment(), OnLongClickListener, OnClickListener {
 
-    private lateinit var recyclerView: RecyclerView
+    interface ProfileListener {
+        fun onBenchmarkClicked(benchmark: Benchmark)
+        fun onLogin()
+        fun onSignOut()
+        fun onClose()
+    }
     private lateinit var adapter: BenchmarkAdapter
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var benchmarkCount: TextView
+    private lateinit var name: TextView
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -40,13 +51,44 @@ class Profile : Fragment(), OnLongClickListener, OnClickListener {
     ): View {
         val view = inflater.inflate(R.layout.fragment_profile, container, false)
 
+        view.findViewById<ImageView>(R.id.close_btn).setOnClickListener { profileListener.onClose() }
+
+        view.findViewById<TextView>(R.id.friends_tv).text = "Friends (${user.friends.size})"
+
+        view.findViewById<TextView>(R.id.profile_balance).text = user.balance.toString()
+
+        benchmarkCount = view.findViewById(R.id.benchmarkCount)
+
+        val signBtn = view.findViewById<Button>(R.id.sign_in_out_btn)
+        val editNameBtn = view.findViewById<ImageView>(R.id.editNameBtn)
+
+        if(enableEdit) {
+            signBtn.text =
+                if (user == guest) getString(R.string.login) else getString(R.string.sign_out)
+            signBtn.setOnClickListener {
+                if (user == guest) {
+                    profileListener.onLogin()
+                } else {
+                    profileListener.onSignOut()
+                }
+            }
+
+            editNameBtn.setOnClickListener {showEditNameDialog()}
+        }else {
+            signBtn.visibility = View.GONE
+            editNameBtn.visibility = View.GONE
+        }
+
         recyclerView = view.findViewById(R.id.benchmarks)
         recyclerView.layoutManager = LinearLayoutManager(context)
-        adapter = BenchmarkAdapter(ArrayList(user.benchmarks.values.toList()), this, this)
+        adapter = BenchmarkAdapter(
+            ArrayList(user.visited.values.toList().sortedByDescending { x-> x.lastVisitedSeconds }),
+            this, this)
         recyclerView.adapter = adapter
+        benchmarkCount.text = "(${adapter.itemCount})"
 
         Glide.with(this)
-            .load(FirebaseAuth.getInstance().currentUser?.photoUrl)
+            .load(user.photoUrl)
             .transform(CircleCrop())
             .into(object : CustomTarget<Drawable>() {
                 override fun onResourceReady(
@@ -59,42 +101,19 @@ class Profile : Fragment(), OnLongClickListener, OnClickListener {
                 override fun onLoadCleared(placeholder: Drawable?) {}
             })
 
-        view.findViewById<TextView>(R.id.nameTextView).text = user.displayName
+        name = view.findViewById(R.id.nameTextView)
+        name.text = user.displayName
 
-        view.findViewById<Button>(R.id.editNameButton).setOnClickListener {
-            val builder = AlertDialog.Builder(context)
-            builder.setTitle("Enter Your Name")
-
-            val input = EditText(context)
-            input.inputType = InputType.TYPE_CLASS_TEXT
-            input.setPadding((16 * resources.displayMetrics.density).toInt())
-            builder.setView(input)
-
-            builder.setPositiveButton("OK") { _, _ ->
-                user.displayName = input.text.toString()
-                (activity as AppCompatActivity?)!!.supportActionBar?.title = user.displayName
-                Thread{ AppModule.db?.localUserDAO()?.update(user) }.start()
-            }
-            val dialog = builder.create()
-            dialog.show()
-
-            val okButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            okButton.isEnabled = false
-
-            input.addTextChangedListener(object : TextWatcher {
-                override fun afterTextChanged(s: Editable?) {
-                    okButton.isEnabled = s.toString().isNotBlank()
-                }
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            })
-
+        view.findViewById<TextView>(R.id.friends_tv).setOnClickListener {
+            FriendsActivity.user = user
+            startActivity(Intent(context, FriendsActivity::class.java))
         }
 
         return view
     }
 
     override fun onLongClick(view: View?): Boolean {
+        if(enableEdit) return false
         AlertDialog.Builder(context)
             .setTitle("Remove Benchmark?")
             .setMessage("Warning! This cannot be undone.")
@@ -104,17 +123,63 @@ class Profile : Fragment(), OnLongClickListener, OnClickListener {
                 val pid = pidT.substring(0, pidT.length-1)
                 adapter.removeBenchmark(pid)
                 adapter.notifyDataSetChanged()
-                user.benchmarks.remove(pid)
-                Thread{ AppModule.db?.localUserDAO()?.update(user) }.start()
+                user.visited.remove(pid)
+                user.update()
+                benchmarkCount.text = "(${adapter.itemCount})"
             }
             .show()
         return true
     }
 
     override fun onClick(view: View?) {
+        if(!enableEdit) return
         val pidT = view?.findViewById<TextView>(R.id.pid)?.text.toString()
         val pid = pidT.substring(0, pidT.length-1)
-        Home.selectedBenchmark = user.benchmarks[pid]
-        activity?.findViewById<BottomNavigationView>(R.id.bottomNavigationView)?.selectedItemId = R.id.home
+        if(user.visited.contains(pid)) profileListener.onBenchmarkClicked(user.visited[pid]!!)
+    }
+
+    private fun showEditNameDialog(){
+        val builder = AlertDialog.Builder(context)
+        builder.setTitle("Enter Your Name")
+
+        val input = EditText(context)
+        input.setText(user.displayName)
+        input.inputType = InputType.TYPE_CLASS_TEXT
+        input.setPadding((16 * resources.displayMetrics.density).toInt())
+        builder.setView(input)
+
+        builder.setPositiveButton("OK") { _, _ ->
+            user.displayName = input.text.toString()
+            name.text = user.displayName
+            (activity as AppCompatActivity?)!!.supportActionBar?.title = user.displayName
+            user.update()
+        }
+        val dialog = builder.create()
+        dialog.show()
+
+        val okButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+        okButton.isEnabled = false
+
+        input.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                okButton.isEnabled = s.toString().isNotBlank()
+            }
+
+            override fun beforeTextChanged(
+                s: CharSequence?,
+                start: Int,
+                count: Int,
+                after: Int
+            ) {
+            }
+
+            override fun onTextChanged(
+                s: CharSequence?,
+                start: Int,
+                before: Int,
+                count: Int
+            ) {
+            }
+        })
     }
 }

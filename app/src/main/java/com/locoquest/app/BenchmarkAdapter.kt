@@ -27,6 +27,7 @@ class BenchmarkAdapter(private val benchmarks: ArrayList<Benchmark>,
         holder.pid.text = "${benchmark.pid}:"
         holder.name.text = benchmark.name
         holder.latlng.text = "${benchmark.lat} ${benchmark.lon}"
+        holder.lastVisited.text = Converters.formatSeconds(benchmark.lastVisitedSeconds)
 
         holder.itemView.setOnLongClickListener(longClickListener)
         holder.itemView.setOnClickListener(clickListener)
@@ -41,5 +42,6 @@ class BenchmarkAdapter(private val benchmarks: ArrayList<Benchmark>,
         val pid: TextView = itemView.findViewById(R.id.pid)
         val name: TextView = itemView.findViewById(R.id.name)
         val latlng: TextView = itemView.findViewById(R.id.latlng)
+        val lastVisited: TextView = itemView.findViewById(R.id.last)
     }
 }

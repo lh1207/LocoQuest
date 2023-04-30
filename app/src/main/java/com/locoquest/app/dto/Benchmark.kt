@@ -1,19 +1,16 @@
 package com.locoquest.app.dto
-import androidx.room.Entity
-import androidx.room.PrimaryKey
 
-@Entity(tableName="benchmark")
 data class Benchmark(
-    @PrimaryKey
     val pid: String,
     val name: String,
-    val lat: String,
-    val lon: String,
-    val ellipHeight: String,
-    val posDatum: String,
-    val posSource: String,
-    val posOrder: String,
-    val orthoHt: String,
-    val vertDatum: String,
-    val vertSource: String,
-    val vertOrder: String )
+    val lat: Double,
+    val lon: Double,
+    var lastVisitedSeconds: Long = 0,
+    /*var ellipHeight: String = "",
+    var posDatum: String = "",
+    var posSource: String = "",
+    var posOrder: String = "",
+    var orthoHt: String = "",
+    var vertDatum: String = "",
+    var vertSource: String = "",
+    var vertOrder: String = "" */)

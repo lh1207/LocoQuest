@@ -7,7 +7,7 @@ remote server, and authenticating with Firebase.
  */
 package com.locoquest.app
 
-import android.content.DialogInterface
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.IntentSender
 import android.graphics.drawable.Drawable
@@ -21,7 +21,6 @@ import android.view.MenuItem
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.Fragment
 import androidx.room.Room
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
@@ -29,54 +28,40 @@ import com.bumptech.glide.request.target.CustomTarget
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.SignInClient
-import com.google.android.gms.common.SignInButton
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
-import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.GeoPoint
+import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.locoquest.app.AppModule.Companion.db
 import com.locoquest.app.AppModule.Companion.guest
 import com.locoquest.app.AppModule.Companion.user
-import com.locoquest.app.dao.BenchmarkDatabase
+import com.locoquest.app.dao.DB
+import com.locoquest.app.dto.Benchmark
 import com.locoquest.app.dto.User
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), Profile.ProfileListener {
 
     private val auth = FirebaseAuth.getInstance()
     private lateinit var oneTapClient: SignInClient
     private lateinit var signUpRequest: BeginSignInRequest
     private lateinit var menu: Menu
-    private lateinit var bottomNav: BottomNavigationView
     private var home: Home = Home()
+    private var profile: Profile? = null
     private var switchingUser = false
+    private val fDb = Firebase.firestore
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        loadFragment(home)
-
-        bottomNav = findViewById(R.id.bottomNavigationView)
-        bottomNav.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.home -> {
-                    loadFragment(home)
-                }
-                R.id.profile -> {
-                    loadFragment(Profile())
-                }
-                R.id.settings -> {
-                    loadFragment(Settings())
-                }
-                else -> {
-                }
-            }
-            true
-        }
+        supportFragmentManager.beginTransaction().replace(R.id.home_container, home).commit()
 
         // Firebase Sign-in
         oneTapClient = Identity.getSignInClient(this)
@@ -93,7 +78,7 @@ class MainActivity : AppCompatActivity() {
             .build()
 
         Thread{
-            db = Room.databaseBuilder(this, BenchmarkDatabase::class.java, "db")
+            db = Room.databaseBuilder(this, DB::class.java, "db")
                 .fallbackToDestructiveMigration().build()
             if (auth.currentUser != null)
                 user = User(auth.currentUser!!.uid)
@@ -146,9 +131,10 @@ class MainActivity : AppCompatActivity() {
                         auth.signInWithCredential(firebaseCredential)
                             .addOnCompleteListener(this) { task ->
                                 if (task.isSuccessful) {
-                                    user = User(auth.currentUser!!.uid, auth.currentUser!!.displayName!!, HashMap())
+                                    user = User(auth.currentUser!!.uid,
+                                        auth.currentUser!!.displayName!!,
+                                        auth.currentUser!!.photoUrl.toString())
                                     switchUser()
-                                    displayUserInfo()
                                     Log.d(TAG, "signInWithCredential:success")
                                 } else {
                                     Log.w(TAG, "signInWithCredential:failure", task.exception)
@@ -186,7 +172,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         this.menu = menu
         menuInflater.inflate(R.menu.main, menu)
-        displayUserInfo()
+        //displayUserInfo()
         return true
     }
 
@@ -199,10 +185,11 @@ class MainActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.menu_item_account -> {
-                if (auth.currentUser == null) {
-                    login()
+                if (profile == null) {
+                    profile = Profile(user, true,this)
+                    supportFragmentManager.beginTransaction().replace(R.id.profile_container, profile!!).commit()
                 } else {
-                    signOut()
+                    hideProfile()
                 }
                 true
             }
@@ -210,11 +197,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Function: login
-     * Description: Private function to handle user login.
-     */
-    private fun login() {
+    override fun onBenchmarkClicked(benchmark: Benchmark) {
+        hideProfile()
+        home.selectedBenchmark = benchmark
+        home.loadMarkers(false)
+    }
+
+    override fun onLogin() {
         try {
             oneTapClient.beginSignIn(signUpRequest)
                 .addOnSuccessListener(this) { result ->
@@ -236,42 +225,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Function: displayUserInfo
-     * Description: Private function to display user information.
-     */
-    private fun displayUserInfo() {
-        auth.currentUser?.let { user ->
-            supportActionBar?.let {
-                if(AppModule.user.displayName == "") {
-                    AppModule.user.displayName = user.displayName.toString()
-                    Thread { db?.localUserDAO()?.update(AppModule.user) }.start()
-                }
-
-                it.title = user.displayName
-
-                Glide.with(this)
-                    .load(user.photoUrl)
-                    .transform(CircleCrop())
-                    .into(object : CustomTarget<Drawable>() {
-                        override fun onResourceReady(
-                            resource: Drawable,
-                            transition: com.bumptech.glide.request.transition.Transition<in Drawable>?
-                        ) {
-                            menu.findItem(R.id.menu_item_account).icon = resource
-                        }
-
-                        override fun onLoadCleared(placeholder: Drawable?) {}
-                    })
-            }
-        }
-    }
-
-    /**
-     * Function: signOut
-     * Description: Private function to handle user sign out.
-     */
-    private fun signOut() {
+    override fun onSignOut() {
         Firebase.auth.signOut()
         supportActionBar?.let {
             it.title = "LocoQuest"
@@ -283,47 +237,109 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onClose() {
+        hideProfile()
+    }
+
+    private fun displayUserInfo() {
+        if (user.displayName == "") {
+            user.displayName = auth.currentUser?.displayName.toString()
+        }
+
+        supportActionBar?.title = user.displayName
+
+        Glide.with(this)
+            .load(user.photoUrl)
+            .transform(CircleCrop())
+            .into(object : CustomTarget<Drawable>() {
+                override fun onResourceReady(
+                    resource: Drawable,
+                    transition: com.bumptech.glide.request.transition.Transition<in Drawable>?
+                ) {
+                    menu.findItem(R.id.menu_item_account).icon = resource
+                }
+
+                override fun onLoadCleared(placeholder: Drawable?) {}
+            })
+
+        try{home.balance.text = user.balance.toString()}catch (_:Exception){}
+    }
+
+    @Suppress("UNCHECKED_CAST")
     private fun switchUser(){
         if(!switchingUser)
             Thread{
                 switchingUser = true
                 val userDao = db!!.localUserDAO()
                 val tmpUser = userDao.getUser(user.uid)
+
                 if(tmpUser == null) {
                     userDao.insert(user)
                 }else user = tmpUser
+
                 Handler(Looper.getMainLooper()).post{
                     supportActionBar?.title = user.displayName
-                    when(bottomNav.selectedItemId){
-                        R.id.home -> home.loadMarkers(true)
-                        R.id.profile -> loadFragment(Profile())
+                    hideProfile()
+
+                    if(user == guest) {
+                        switchingUser = false
+                        home.loadMarkers(true)
+                        return@post
                     }
+
+                    fDb.collection("users").document(user.uid)
+                        .get()
+                        .addOnSuccessListener {
+                            if(it.data == null){
+                                user.push()
+                                return@addOnSuccessListener
+                            }
+                            Log.d(TAG, "${it.id} => ${it.data}")
+
+                            val name = if(it["name"] == null) {
+                                user.push()
+                                user.displayName
+                            } else it["name"] as String
+
+                            val photoUrl = if(it["photoUrl"] == null) {
+                                if(user.photoUrl == "") user.photoUrl = auth.currentUser?.photoUrl.toString()
+                                user.push()
+                                user.photoUrl
+                            } else it["photoUrl"] as String
+
+                            val balance = if(it["balance"] == null) user.balance else it["balance"] as Long
+
+                            val visited = HashMap<String, Benchmark>()
+                            val visitedList = if(it["visited"] == null) ArrayList() else it["visited"] as ArrayList<HashMap<String, Any>>
+                            visitedList.forEach { x ->
+                                val pid = x["pid"] as String
+                                val location = x["location"] as GeoPoint
+                                val lastVisited = x["lastVisited"] as Timestamp
+                                visited[x["pid"] as String] = Benchmark(pid, x["name"] as String, location.latitude, location.longitude, lastVisited.seconds)
+                            }
+
+                            val uids = if(it["uids"] == null) ArrayList() else it["uids"] as ArrayList<String>
+
+                            user = User(user.uid, name, photoUrl, balance, visited, uids)
+                            Thread{ db!!.localUserDAO().update(user)}.start()
+                            home.loadMarkers(true)
+                        }
+                        .addOnFailureListener{
+                            Log.d(TAG, it.toString())
+                            user.push()
+                            home.loadMarkers(true)
+                        }.addOnCompleteListener {
+                            displayUserInfo()
+                            switchingUser = false
+                        }
                 }
-                switchingUser = false
             }.start()
     }
 
-    private fun loadFragment(fragment: Fragment) {
-        when (fragment) {
-            is Home -> {
-                if(fragment.isAdded) return
-                supportFragmentManager.beginTransaction()
-                    .add(R.id.container, fragment, "HomeFragment")
-                    .show(fragment)
-                    .commit()
-            }
-            is Profile -> {
-                supportFragmentManager.beginTransaction()
-                    .replace(R.id.container, fragment)
-                    .addToBackStack(null)
-                    .commit()
-            }
-            is Settings -> {
-                supportFragmentManager.beginTransaction()
-                    .replace(R.id.container, fragment)
-                    .addToBackStack(null)
-                    .commit()
-            }
+    private fun hideProfile(){
+        if(profile != null){
+            supportFragmentManager.beginTransaction().remove(profile!!).commit()
+            profile = null
         }
     }
 
