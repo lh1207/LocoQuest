@@ -52,9 +52,14 @@ data class User(
         return AppModule.user.lastRadiusBoost.seconds + BOOSTED_DURATION > Timestamp.now().seconds
     }
 
-    fun getReach(): Double{
-        return if(isBoosted()) BOOSTED_REACH else DEFAULT_REACH
+    fun getReach(): Double {
+        return if (isBoosted()) BOOSTED_REACH else DEFAULT_REACH
     }
+
+    fun dump() : String{
+        return "uid: $uid, name:$displayName, photoUrl:$photoUrl, balance:$balance, lastRadiusBoost:${lastRadiusBoost.seconds}, visited:${visited.size}, friends:${friends.size}"
+    }
+
     override fun toString(): String {
         return displayName
     }

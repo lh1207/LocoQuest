@@ -11,7 +11,7 @@ class AppModule {
         const val DEFAULT_REACH = 150.0
         const val BOOSTED_REACH = 250.0
         const val BOOSTED_DURATION = 300
-        const val DEBUG = true
+        const val DEBUG = false
         //const val AD_FREE = false
     }
 }
