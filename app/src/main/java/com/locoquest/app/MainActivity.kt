@@ -177,7 +177,7 @@ class MainActivity : AppCompatActivity(), ISecondaryFragment, Profile.ProfileLis
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         this.menu = menu
         menuInflater.inflate(R.menu.main, menu)
-        //displayUserInfo()
+        displayUserInfo()
         return true
     }
 
@@ -253,6 +253,8 @@ class MainActivity : AppCompatActivity(), ISecondaryFragment, Profile.ProfileLis
 
     override fun onClose(fragment: Fragment) {
         supportFragmentManager.beginTransaction().remove(fragment).commit()
+        if(user.isBoosted()) home.monitorBoostedTimer()
+        home.balance.text = user.balance.toString()
     }
 
     override fun onMushroomClicked() {
@@ -280,7 +282,11 @@ class MainActivity : AppCompatActivity(), ISecondaryFragment, Profile.ProfileLis
                 override fun onLoadCleared(placeholder: Drawable?) {}
             })
 
-        try{home.balance.text = user.balance.toString()}catch (_:Exception){}
+        try{
+            home.balance.text = user.balance.toString()
+        }catch (e:Exception) {
+            Log.e("balance", e.toString())
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -299,9 +305,10 @@ class MainActivity : AppCompatActivity(), ISecondaryFragment, Profile.ProfileLis
                     supportActionBar?.title = user.displayName
                     hideProfile()
 
-                    if(user == guest) {
-                        switchingUser = false
+                    if(user.uid == guest.uid) {
                         home.loadMarkers(true)
+                        displayUserInfo()
+                        switchingUser = false
                         return@post
                     }
 

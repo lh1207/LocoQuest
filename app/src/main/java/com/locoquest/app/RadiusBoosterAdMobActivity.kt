@@ -117,6 +117,7 @@ class RadiusBoosterAdMobActivity : AppCompatActivity() {
             interstitialAd!!.show(this) {
                 user.lastRadiusBoost = Timestamp.now()
                 user.update()
+                finish()
             }
         } else {
             Toast.makeText(this, "Ad did not load", Toast.LENGTH_SHORT).show()

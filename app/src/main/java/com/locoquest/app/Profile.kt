@@ -14,6 +14,7 @@ import android.view.View.OnLongClickListener
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -63,9 +64,12 @@ class Profile(private val user: User,
 
         if(enableEdit) {
             signBtn.text =
-                if (user == guest) getString(R.string.login) else getString(R.string.sign_out)
+                if (user.uid == guest.uid)
+                    getString(R.string.login)
+                else
+                    getString(R.string.sign_out)
             signBtn.setOnClickListener {
-                if (user == guest) {
+                if (user.uid == guest.uid) {
                     profileListener.onLogin()
                 } else {
                     profileListener.onSignOut()
@@ -108,6 +112,7 @@ class Profile(private val user: User,
             startActivity(Intent(context, FriendsActivity::class.java))
         }
 
+        view.findViewById<FrameLayout>(R.id.profile_bg).setOnTouchListener { _, _ -> true }
         return view
     }
 

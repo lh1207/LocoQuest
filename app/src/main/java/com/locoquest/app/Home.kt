@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.location.Location
 import android.location.LocationManager
 import android.net.ConnectivityManager
@@ -39,11 +40,14 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.Circle
+import com.google.android.gms.maps.model.CircleOptions
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.Timestamp
+import com.locoquest.app.AppModule.Companion.BOOSTED_DURATION
 import com.locoquest.app.AppModule.Companion.DEBUG
 import com.locoquest.app.AppModule.Companion.user
 import com.locoquest.app.Converters.Companion.toMarkerOptions
@@ -55,16 +59,20 @@ class Home(private val homeListener: HomeListener) : Fragment(), OnMapReadyCallb
     var selectedBenchmark: Benchmark? = null
     lateinit var balance: TextView
     private var googleMap: GoogleMap? = null
+    private var circle: Circle? = null
     private var selectedMarker: Marker? = null
     private var mapFragment: SupportMapFragment? = null
     private var tracking = true
-    private var monitor = false
+    private var monitoringSelectedMarker = false
+    private var monitoringBoost = false
     private var loadingMarkers = false
     private var cameraIsBeingMoved = false
     private var notifyUserOfNetwork = true
     private var markerToBenchmark: HashMap<Marker, Benchmark> = HashMap()
     private var benchmarkToMarker: HashMap<Benchmark, Marker> = HashMap()
     private lateinit var offlineImg: ImageView
+    private lateinit var mushroom: ImageView
+    private lateinit var timerTxt: TextView
     private lateinit var layersLayout: LinearLayout
     private lateinit var layersFab: FloatingActionButton
     private lateinit var myLocation: FloatingActionButton
@@ -156,7 +164,12 @@ class Home(private val homeListener: HomeListener) : Fragment(), OnMapReadyCallb
         balance = view.findViewById(R.id.balance)
         balance.text = user.balance.toString()
 
-        view.findViewById<ImageView>(R.id.mushroom).setOnClickListener { homeListener.onMushroomClicked() }
+        mushroom = view.findViewById(R.id.mushroom)
+        mushroom.setOnClickListener { homeListener.onMushroomClicked() }
+
+        timerTxt = view.findViewById(R.id.timerTxt)
+
+        if(user.isBoosted()) monitorBoostedTimer()
 
         return view
     }
@@ -176,6 +189,9 @@ class Home(private val homeListener: HomeListener) : Fragment(), OnMapReadyCallb
         updateNetworkStatus()
         cameraIsBeingMoved = false
         notifyUserOfNetwork = true
+
+        balance.text = user.balance.toString()
+        if(user.isBoosted()) monitorBoostedTimer()
     }
 
     override fun onPause() {
@@ -212,7 +228,7 @@ class Home(private val homeListener: HomeListener) : Fragment(), OnMapReadyCallb
             Log.d("tracker", "map was clicked on")
             selectedMarker = null
             layersLayout.visibility = View.GONE
-            monitor = false
+            monitoringSelectedMarker = false
             Thread{
                 Thread.sleep(500) // wait for direction btn to hide
                 Handler(Looper.getMainLooper()).post{layersFab.visibility = View.VISIBLE}
@@ -249,7 +265,7 @@ class Home(private val homeListener: HomeListener) : Fragment(), OnMapReadyCallb
 
         val lastLocation = lastLocation()
         val inProximity = if(DEBUG) true
-            else isWithin500Feet(marker.position, LatLng(lastLocation.latitude, lastLocation.longitude))
+            else inProximity(user.getReach(), marker.position, LatLng(lastLocation.latitude, lastLocation.longitude))
 
         //if coin is collectable
         if(!user.visited.contains(benchmark.pid) || (user.visited.contains(benchmark.pid) && canCollect(benchmark))) {
@@ -294,7 +310,9 @@ class Home(private val homeListener: HomeListener) : Fragment(), OnMapReadyCallb
         val minutes = (seconds % 3600) / 60
         val secondsRemaining = seconds % 60
 
-        return String.format("%02d:%02d:%02d", hours, minutes, secondsRemaining)
+        return if(hours > 0) String.format("%02d:%02d:%02d", hours, minutes, secondsRemaining)
+        else if(minutes > 0) String.format("%02d:%02d", minutes, secondsRemaining)
+        else String.format("%02d", secondsRemaining)
     }
 
 
@@ -307,14 +325,14 @@ class Home(private val homeListener: HomeListener) : Fragment(), OnMapReadyCallb
     }
 
     private fun monitorSelectedMarker(){
-        if(monitor) return
-        monitor = true
+        if(monitoringSelectedMarker) return
+        monitoringSelectedMarker = true
         Thread{
             Thread.sleep(1000)
-            while (monitor){
+            while (monitoringSelectedMarker){
                 Handler(Looper.getMainLooper()).post{
                     if(selectedMarker == null) {
-                        monitor = false
+                        monitoringSelectedMarker = false
                         return@post
                     }
                     try {
@@ -322,7 +340,7 @@ class Home(private val homeListener: HomeListener) : Fragment(), OnMapReadyCallb
                         selectedMarker!!.showInfoWindow()
                         //selectedMarker!!.setIcon(getMarkerRes(markerToBenchmark[selectedMarker]!!))
                     }catch (e: Exception){
-                        monitor = false
+                        monitoringSelectedMarker = false
                         Log.e("selected marker", e.toString())
                     }
                 }
@@ -340,7 +358,7 @@ class Home(private val homeListener: HomeListener) : Fragment(), OnMapReadyCallb
         )
     }
 
-    private fun isWithin500Feet(latlng1: LatLng, latlng2: LatLng): Boolean {
+    private fun inProximity(meters: Double, latlng1: LatLng, latlng2: LatLng): Boolean {
         val R = 6371e3 // Earth's radius in meters
         val φ1 = Math.toRadians(latlng1.latitude)
         val φ2 = Math.toRadians(latlng2.latitude)
@@ -353,9 +371,9 @@ class Home(private val homeListener: HomeListener) : Fragment(), OnMapReadyCallb
         val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 
         val d = R * c // distance between the two points in meters
-        val feet = d * 3.28084 // convert distance to feet
+        //val ft = d * 3.28084 // convert distance to feet
 
-        return feet <= 500.0
+        return d <= meters
     }
 
     private fun loadMarkers(){loadMarkers(false)}
@@ -619,11 +637,51 @@ class Home(private val homeListener: HomeListener) : Fragment(), OnMapReadyCallb
             Log.d("tracker", "got location update")
             locationResult.lastLocation.let { location ->
                 lastLocation(location)
+                circle?.remove()
+                circle = googleMap?.addCircle(getMyLocationCircle())
                 if (!tracking) return
                 Log.d("tracker", "updating camera from location update")
                 updateCameraWithLastLocation()
             }
         }
+    }
+
+    private fun getMyLocationCircle() : CircleOptions{
+        val loc = lastLocation()
+        val isBoosted = user.isBoosted()
+        val color = if(isBoosted) Color.argb(50, 255, 255, 0)
+        else Color.argb(50, 0, 0, 255)
+        return CircleOptions()
+            .center(LatLng(loc.latitude, loc.longitude))
+            .fillColor(color)
+            .strokeColor(Color.argb(0,0,0,0))
+            .strokeWidth(0f)
+            .radius(user.getReach())
+    }
+
+    fun monitorBoostedTimer(){
+        if(monitoringBoost) return
+        monitoringBoost = true
+        mushroom.visibility = View.GONE
+        timerTxt.visibility = View.VISIBLE
+        circle?.remove()
+        circle = googleMap?.addCircle(getMyLocationCircle())
+        Thread{
+            while (user.isBoosted()){
+                val remainingSeconds = user.lastRadiusBoost.seconds + BOOSTED_DURATION - Timestamp.now().seconds
+                Handler(Looper.getMainLooper()).post {
+                    timerTxt.text = "Radius Boost\nExpires in ${toCountdownFormat(remainingSeconds)}"
+                }
+                Thread.sleep(1000)
+            }
+            Handler(Looper.getMainLooper()).post {
+                mushroom.visibility = View.VISIBLE
+                timerTxt.visibility = View.GONE
+                circle?.remove()
+                circle = googleMap?.addCircle(getMyLocationCircle())
+            }
+            monitoringBoost = false
+        }.start()
     }
 
     private fun prefs(): SharedPreferences {

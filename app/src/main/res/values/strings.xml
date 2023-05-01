@@ -55,4 +55,5 @@
     <string name="get_a_power_up_to_your_reach_and_collect_coins_from_further_away_for_5_minutes">Get a power-up to your reach and collect coins from further away for 5 minutes.</string>
     <string name="radius_boost">Radius Boost</string>
     <string name="equip_radius_boost_now">Equip Radius Boost Now\nCost 2 Coins</string>
+    <string name="radius_boost_expires_in_5_00">Radius Boost Expires in 5:00</string>
 </resources>

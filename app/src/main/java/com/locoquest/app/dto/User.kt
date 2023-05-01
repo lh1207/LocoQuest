@@ -7,6 +7,9 @@ import com.google.firebase.firestore.GeoPoint
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.locoquest.app.AppModule
+import com.locoquest.app.AppModule.Companion.BOOSTED_DURATION
+import com.locoquest.app.AppModule.Companion.BOOSTED_REACH
+import com.locoquest.app.AppModule.Companion.DEFAULT_REACH
 import com.locoquest.app.AppModule.Companion.db
 
 @Entity
@@ -43,6 +46,14 @@ data class User(
                 "visited" to visitedList.toList(),
                 "friends" to friends.toList()
             ))
+    }
+
+    fun isBoosted(): Boolean {
+        return AppModule.user.lastRadiusBoost.seconds + BOOSTED_DURATION > Timestamp.now().seconds
+    }
+
+    fun getReach(): Double{
+        return if(isBoosted()) BOOSTED_REACH else DEFAULT_REACH
     }
     override fun toString(): String {
         return displayName

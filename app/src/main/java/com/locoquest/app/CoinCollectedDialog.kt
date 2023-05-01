@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.ImageView
 import androidx.fragment.app.Fragment
 
@@ -25,6 +26,7 @@ class CoinCollectedDialog(private val fragmentListener: ISecondaryFragment,
             fragmentListener.onClose(this)
         }
         view.findViewById<ImageView>(R.id.close_dialog_btn).setOnClickListener { fragmentListener.onClose(this) }
+        view.findViewById<FrameLayout>(R.id.dialog_bg).setOnTouchListener { _, _ -> true }
         return view
     }
 }

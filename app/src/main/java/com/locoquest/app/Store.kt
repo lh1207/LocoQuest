@@ -6,13 +6,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.google.firebase.Timestamp
 import com.locoquest.app.AppModule.Companion.user
 
-class Store(val fragmentListener: ISecondaryFragment) : Fragment() {
+class Store(private val fragmentListener: ISecondaryFragment) : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -31,12 +32,10 @@ class Store(val fragmentListener: ISecondaryFragment) : Fragment() {
         }
         view.findViewById<Button>(R.id.radius_booster_btn_ad).setOnClickListener {
             startActivity(Intent(requireContext(), RadiusBoosterAdMobActivity::class.java))
-            user.lastRadiusBoost = Timestamp.now()
-            user.update()
             fragmentListener.onClose(this)
         }
         view.findViewById<ImageView>(R.id.close_store_btn).setOnClickListener { fragmentListener.onClose(this) }
+        view.findViewById<FrameLayout>(R.id.store_bg).setOnTouchListener { _, _ -> true }
         return view
-
     }
 }
