@@ -142,4 +142,16 @@
 
     </LinearLayout>
 
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/notify_fab"
+        android:visibility="gone"
+        android:src="@drawable/notifications_off"
+        android:layout_margin="16dp"
+        android:tooltipText="@string/notify_tooltip"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -35,7 +35,8 @@ data class User(
             "pid" to x.value.pid,
             "name" to x.value.name,
             "location" to GeoPoint(x.value.lat, x.value.lon),
-            "lastVisited" to Timestamp(x.value.lastVisited, 0)
+            "lastVisited" to Timestamp(x.value.lastVisited, 0),
+            "notify" to x.value.notify
         )) }
         Firebase.firestore.collection("users").document(AppModule.user.uid)
             .set(hashMapOf(

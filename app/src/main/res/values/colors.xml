@@ -11,4 +11,5 @@
     <color name="semi_transparent_yellow">#99FFFF00</color>
     <color name="semi_transparent_blue">#80002BFF</color>
     <color name="clear">#00000000</color>
+    <color name="blue">#0000FF</color>
 </resources>

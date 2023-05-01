@@ -8,6 +8,7 @@ data class Benchmark(
     val lat: Double,
     val lon: Double,
     var lastVisited: Long = 0,
+    var notify: Boolean = false,
     /*var ellipHeight: String = "",
     var posDatum: String = "",
     var posSource: String = "",
@@ -20,8 +21,10 @@ data class Benchmark(
         fun new(pid: String,
                 name: String,
                 location: GeoPoint,
-                lastVisited: Timestamp = Timestamp(0,0)) : Benchmark {
-            return Benchmark(pid, name, location.latitude, location.longitude, lastVisited.seconds)
+                lastVisited: Timestamp = Timestamp(0,0),
+                notify: Boolean
+        ) : Benchmark {
+            return Benchmark(pid, name, location.latitude, location.longitude, lastVisited.seconds, notify)
         }
     }
 }

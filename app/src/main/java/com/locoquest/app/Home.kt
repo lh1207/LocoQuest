@@ -49,6 +49,9 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.Timestamp
 import com.locoquest.app.AppModule.Companion.BOOSTED_DURATION
 import com.locoquest.app.AppModule.Companion.DEBUG
+import com.locoquest.app.AppModule.Companion.SECONDS_TO_RECOLLECT
+import com.locoquest.app.AppModule.Companion.cancelNotification
+import com.locoquest.app.AppModule.Companion.scheduleNotification
 import com.locoquest.app.AppModule.Companion.user
 import com.locoquest.app.Converters.Companion.toMarkerOptions
 import com.locoquest.app.dto.Benchmark
@@ -70,6 +73,7 @@ class Home(private val homeListener: HomeListener) : Fragment(), OnMapReadyCallb
     private var notifyUserOfNetwork = true
     private var markerToBenchmark: HashMap<Marker, Benchmark> = HashMap()
     private var benchmarkToMarker: HashMap<Benchmark, Marker> = HashMap()
+    private lateinit var notifyFab: FloatingActionButton
     private lateinit var offlineImg: ImageView
     private lateinit var mushroom: ImageView
     private lateinit var timerTxt: TextView
@@ -171,6 +175,20 @@ class Home(private val homeListener: HomeListener) : Fragment(), OnMapReadyCallb
 
         if(user.isBoosted()) monitorBoostedTimer()
 
+        notifyFab = view.findViewById(R.id.notify_fab)
+        notifyFab.setOnClickListener {
+            val benchmark = markerToBenchmark[selectedMarker]!!
+            val notify = benchmark.notify
+            benchmark.notify = !notify
+            notifyFab.setImageResource(if(benchmark.notify)R.drawable.notifications_active else R.drawable.notifications_off)
+
+            if(collected(benchmark)) scheduleNotification(requireContext(), benchmark)
+            user.visited[benchmark.pid] = benchmark
+            user.update()
+
+            if(!benchmark.notify) cancelNotification(requireContext(), benchmark)
+        }
+
         return view
     }
 
@@ -227,6 +245,7 @@ class Home(private val homeListener: HomeListener) : Fragment(), OnMapReadyCallb
         map.setOnMapClickListener {
             Log.d("tracker", "map was clicked on")
             selectedMarker = null
+            notifyFab.visibility = View.GONE
             layersLayout.visibility = View.GONE
             monitoringSelectedMarker = false
             Thread{
@@ -258,6 +277,9 @@ class Home(private val homeListener: HomeListener) : Fragment(), OnMapReadyCallb
 
         if(!markerToBenchmark.contains(marker)) return true
         val benchmark = markerToBenchmark[marker]!!
+
+        notifyFab.visibility = View.VISIBLE
+        notifyFab.setImageResource(if(benchmark.notify)R.drawable.notifications_active else R.drawable.notifications_off)
 
         monitorSelectedMarker()
 
@@ -720,6 +742,5 @@ class Home(private val homeListener: HomeListener) : Fragment(), OnMapReadyCallb
         private const val TRACKING_INTERVAL = 5000L
         private const val TRACKING_FASTEST_INTERVAL = 1000L
         private const val CAMERA_ANIMATION_DURATION = 2000
-        val SECONDS_TO_RECOLLECT = if(DEBUG) 30 else 14400 // 4 hrs
     }
 }

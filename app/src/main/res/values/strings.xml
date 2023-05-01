@@ -56,4 +56,9 @@
     <string name="radius_boost">Radius Boost</string>
     <string name="equip_radius_boost_now">Equip Radius Boost Now\nCost 2 Coins</string>
     <string name="radius_boost_expires_in_5_00">Radius Boost Expires in 5:00</string>
+    <string name="channel_name">Coin</string>
+    <string name="channel_description">Coin is collectible</string>
+    <string name="get_notifications">Get notifications for this coin</string>
+    <string name="remove_notifications">Remove notifications for this coin</string>
+    <string name="notify_tooltip">Add or Remove notifications for this coin</string>
 </resources>

@@ -41,6 +41,7 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.locoquest.app.AppModule.Companion.db
 import com.locoquest.app.AppModule.Companion.guest
+import com.locoquest.app.AppModule.Companion.scheduleNotification
 import com.locoquest.app.AppModule.Companion.user
 import com.locoquest.app.dao.DB
 import com.locoquest.app.dto.Benchmark
@@ -219,6 +220,7 @@ class MainActivity : AppCompatActivity(), ISecondaryFragment, Profile.ProfileLis
         Log.d("event", "MainActivity.onCoinCollected")
         Toast.makeText(this, "Coin collected", Toast.LENGTH_SHORT).show()
         supportFragmentManager.beginTransaction().replace(R.id.secondary_container, CoinCollectedDialog(this, this)).commit()
+        if(benchmark.notify) scheduleNotification(this, benchmark)
     }
 
     override fun onWatchAdButtonClicked() {
@@ -361,11 +363,15 @@ class MainActivity : AppCompatActivity(), ISecondaryFragment, Profile.ProfileLis
                             if (it["visited"] == null) ArrayList() else it["visited"] as ArrayList<HashMap<String, Any>>
                         visitedList.forEach { x ->
                             val pid = x["pid"] as String
+                            val lastVisited = if(x["lastVisited"] == null) Timestamp(0,0) else x["lastVisited"] as Timestamp
+                            val notify = if(x["notify"] == null) false else x["notify"] as Boolean
+
                             visited[pid] = Benchmark.new(
                                 pid,
                                 x["name"] as String,
                                 x["location"] as GeoPoint,
-                                x["lastVisited"] as Timestamp
+                                lastVisited,
+                                notify
                             )
                         }
                         if (visited.isNotEmpty() && user.visited.isNotEmpty() &&

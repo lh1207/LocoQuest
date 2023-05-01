@@ -97,8 +97,11 @@ dependencies {
     implementation 'com.google.android.gms:play-services-maps:17.0.1'
     implementation 'com.google.android.gms:play-services-location:18.0.0'
 
-    //AdMob
+    // AdMob
     implementation 'com.google.android.gms:play-services-ads:22.0.0'
+
+    // Notifications
+    implementation "androidx.core:core-ktx:1.6.0"
 
     // test
     testImplementation 'junit:junit:4.+'

@@ -94,7 +94,12 @@ class FriendsActivity : AppCompatActivity(), View.OnClickListener, View.OnLongCl
                 val visitedList = if(it["visited"] == null) ArrayList() else it["visited"] as ArrayList<HashMap<String, Any>>
                 visitedList.forEach { x ->
                     val pid = x["pid"] as String
-                    visited[pid] = Benchmark.new(pid, x["name"] as String, x["location"] as GeoPoint, x["lastVisited"] as Timestamp)
+                    visited[pid] = Benchmark.new(pid,
+                        x["name"] as String,
+                        x["location"] as GeoPoint,
+                        x["lastVisited"] as Timestamp,
+                        false
+                    )
                 }
 
                 val friends = if(it["friends"] == null) ArrayList() else it["friends"] as ArrayList<String>
