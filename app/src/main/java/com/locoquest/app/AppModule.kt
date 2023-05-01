@@ -8,7 +8,6 @@ import android.util.Log
 import com.locoquest.app.dao.DB
 import com.locoquest.app.dto.Benchmark
 import com.locoquest.app.dto.User
-import java.util.Calendar
 
 class AppModule {
     companion object{
@@ -20,7 +19,6 @@ class AppModule {
         const val BOOSTED_DURATION = 300
         const val DEBUG = false
         val SECONDS_TO_RECOLLECT = if(DEBUG) 30 else 14400 // 4 hrs
-        //const val AD_FREE = false
 
         fun scheduleNotification(context: Context, benchmark: Benchmark){
             Log.d("notify", "scheduling notification for ${benchmark.name}")
