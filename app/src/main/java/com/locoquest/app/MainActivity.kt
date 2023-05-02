@@ -18,9 +18,11 @@ import android.os.Looper
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
 import androidx.room.Room
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
@@ -39,19 +41,22 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.locoquest.app.AppModule.Companion.db
 import com.locoquest.app.AppModule.Companion.guest
+import com.locoquest.app.AppModule.Companion.scheduleNotification
 import com.locoquest.app.AppModule.Companion.user
 import com.locoquest.app.dao.DB
 import com.locoquest.app.dto.Benchmark
 import com.locoquest.app.dto.User
+import kotlin.math.max
 
 
-class MainActivity : AppCompatActivity(), Profile.ProfileListener {
+class MainActivity : AppCompatActivity(), ISecondaryFragment, Profile.ProfileListener, Home.HomeListener,
+    CoinCollectedDialog.IWatchAdButtonClickListener {
 
     private val auth = FirebaseAuth.getInstance()
     private lateinit var oneTapClient: SignInClient
     private lateinit var signUpRequest: BeginSignInRequest
     private lateinit var menu: Menu
-    private var home: Home = Home()
+    private lateinit var home: Home
     private var profile: Profile? = null
     private var switchingUser = false
     private val fDb = Firebase.firestore
@@ -59,9 +64,11 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d("event", "MainActivity.onCreate")
         setContentView(R.layout.activity_main)
 
-        supportFragmentManager.beginTransaction().replace(R.id.home_container, home).commit()
+        home = Home(this)
+        supportFragmentManager.beginTransaction().replace(R.id.primary_container, home).commit()
 
         // Firebase Sign-in
         oneTapClient = Identity.getSignInClient(this)
@@ -82,6 +89,7 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
                 .fallbackToDestructiveMigration().build()
             if (auth.currentUser != null)
                 user = User(auth.currentUser!!.uid)
+            Log.d("user", "Database loaded, switching to user:${user.uid}")
             switchUser()
         }.start()
     }
@@ -99,6 +107,7 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
         grantResults: IntArray,
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        Log.d("event", "MainActivity.onRequestPermissionsResult")
         if(grantResults.isEmpty()) return
         if(grantResults[0] == 0) {
             home.startLocationUpdates()
@@ -121,6 +130,7 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
      */
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        Log.d("event", "MainActivity.onActivityResult")
         when (requestCode) {
             REQ_ONE_TAP -> {
                 try {
@@ -170,9 +180,10 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
      * @return: Boolean value indicating if the menu creation was successful.
      */
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        Log.d("event", "MainActivity.onCreateOptionsMenu")
         this.menu = menu
         menuInflater.inflate(R.menu.main, menu)
-        //displayUserInfo()
+        displayUserInfo()
         return true
     }
 
@@ -183,11 +194,12 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
      * @return: Boolean value indicating if the item selection was handled successfully.
      */
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        Log.d("event", "MainActivity.onOptionsItemSelected")
         return when (item.itemId) {
             R.id.menu_item_account -> {
                 if (profile == null) {
-                    profile = Profile(user, true,this)
-                    supportFragmentManager.beginTransaction().replace(R.id.profile_container, profile!!).commit()
+                    profile = Profile(user, true,this, this)
+                    supportFragmentManager.beginTransaction().replace(R.id.secondary_container, profile!!).commit()
                 } else {
                     hideProfile()
                 }
@@ -198,13 +210,27 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
     }
 
     override fun onBenchmarkClicked(benchmark: Benchmark) {
+        Log.d("event", "MainActivity.onBenchmarkClicked")
         hideProfile()
         home.selectedBenchmark = benchmark
         home.loadMarkers(false)
     }
 
+    override fun onCoinCollected(benchmark: Benchmark) {
+        Log.d("event", "MainActivity.onCoinCollected")
+        Toast.makeText(this, "Coin collected", Toast.LENGTH_SHORT).show()
+        supportFragmentManager.beginTransaction().replace(R.id.secondary_container, CoinCollectedDialog(this, this)).commit()
+        if(benchmark.notify) scheduleNotification(this, benchmark)
+    }
+
+    override fun onWatchAdButtonClicked() {
+        Log.d("event", "MainActivity.onWatchAdButtonClicked")
+        startActivity(Intent(this, ExtraCoinAdMobActivity::class.java))
+    }
+
     override fun onLogin() {
         try {
+            Log.d("event", "MainActivity.onLogin")
             oneTapClient.beginSignIn(signUpRequest)
                 .addOnSuccessListener(this) { result ->
                     try {
@@ -226,6 +252,7 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
     }
 
     override fun onSignOut() {
+        Log.d("event", "MainActivity.onSignOut")
         Firebase.auth.signOut()
         supportActionBar?.let {
             it.title = "LocoQuest"
@@ -237,8 +264,16 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
         }
     }
 
-    override fun onClose() {
-        hideProfile()
+    override fun onClose(fragment: Fragment) {
+        Log.d("event", "MainActivity.onClose")
+        supportFragmentManager.beginTransaction().remove(fragment).commit()
+        if(user.isBoosted()) home.monitorBoostedTimer()
+        home.balance.text = user.balance.toString()
+    }
+
+    override fun onMushroomClicked() {
+        Log.d("event", "MainActivity.onMushroomClicked")
+        supportFragmentManager.beginTransaction().replace(R.id.secondary_container, Store(this)).commit()
     }
 
     private fun displayUserInfo() {
@@ -262,78 +297,115 @@ class MainActivity : AppCompatActivity(), Profile.ProfileListener {
                 override fun onLoadCleared(placeholder: Drawable?) {}
             })
 
-        try{home.balance.text = user.balance.toString()}catch (_:Exception){}
+        try{
+            home.balance.text = user.balance.toString()
+        }catch (e:Exception) {
+            Log.e("balance", e.toString())
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun switchUser(){
-        if(!switchingUser)
-            Thread{
-                switchingUser = true
-                val userDao = db!!.localUserDAO()
-                val tmpUser = userDao.getUser(user.uid)
+    private fun switchUser() {
+        if (switchingUser) return
+        Thread {
+            switchingUser = true
+            val userDao = db!!.localUserDAO()
+            val tmpUser = userDao.getUser(user.uid)
 
-                if(tmpUser == null) {
-                    userDao.insert(user)
-                }else user = tmpUser
+            if (tmpUser == null) {
+                userDao.insert(user)
+            } else user = tmpUser
 
-                Handler(Looper.getMainLooper()).post{
-                    supportActionBar?.title = user.displayName
-                    hideProfile()
+            Log.d("user", "user loaded from db; ${user.dump()}")
 
-                    if(user == guest) {
-                        switchingUser = false
-                        home.loadMarkers(true)
-                        return@post
-                    }
+            Handler(Looper.getMainLooper()).post {
+                supportActionBar?.title = user.displayName
+                hideProfile()
 
-                    fDb.collection("users").document(user.uid)
-                        .get()
-                        .addOnSuccessListener {
-                            if(it.data == null){
-                                user.push()
-                                return@addOnSuccessListener
-                            }
-                            Log.d(TAG, "${it.id} => ${it.data}")
-
-                            val name = if(it["name"] == null) {
-                                user.push()
-                                user.displayName
-                            } else it["name"] as String
-
-                            val photoUrl = if(it["photoUrl"] == null) {
-                                if(user.photoUrl == "") user.photoUrl = auth.currentUser?.photoUrl.toString()
-                                user.push()
-                                user.photoUrl
-                            } else it["photoUrl"] as String
-
-                            val balance = if(it["balance"] == null) user.balance else it["balance"] as Long
-
-                            val visited = HashMap<String, Benchmark>()
-                            val visitedList = if(it["visited"] == null) ArrayList() else it["visited"] as ArrayList<HashMap<String, Any>>
-                            visitedList.forEach { x ->
-                                val pid = x["pid"] as String
-                                val location = x["location"] as GeoPoint
-                                val lastVisited = x["lastVisited"] as Timestamp
-                                visited[x["pid"] as String] = Benchmark(pid, x["name"] as String, location.latitude, location.longitude, lastVisited.seconds)
-                            }
-
-                            val uids = if(it["uids"] == null) ArrayList() else it["uids"] as ArrayList<String>
-
-                            user = User(user.uid, name, photoUrl, balance, visited, uids)
-                            Thread{ db!!.localUserDAO().update(user)}.start()
-                            home.loadMarkers(true)
-                        }
-                        .addOnFailureListener{
-                            Log.d(TAG, it.toString())
-                            user.push()
-                            home.loadMarkers(true)
-                        }.addOnCompleteListener {
-                            displayUserInfo()
-                            switchingUser = false
-                        }
+                if (user.uid == guest.uid) {
+                    home.loadMarkers(true)
+                    displayUserInfo()
+                    Log.d("user", "user switched; ${user.dump()}")
+                    switchingUser = false
+                    return@post
                 }
-            }.start()
+
+                fDb.collection("users").document(user.uid)
+                    .get()
+                    .addOnSuccessListener {
+                        if (it.data == null) {
+                            user.push()
+                            return@addOnSuccessListener
+                        }
+                        Log.d(TAG, "${it.id} => ${it.data}")
+
+                        val name =
+                            if (it["name"] == null) user.displayName else it["name"] as String
+
+                        val photoUrl = if (it["photoUrl"] == null) {
+                            user.photoUrl = auth.currentUser?.photoUrl.toString()
+                            user.photoUrl
+                        } else it["photoUrl"] as String
+
+                        val lastRadiusBoost =
+                            if (it["lastRadiusBoost"] == null) user.lastRadiusBoost
+                            else {
+                                val tmpVal = it["lastRadiusBoost"] as Timestamp
+                                if (tmpVal.seconds > user.lastRadiusBoost.seconds) tmpVal
+                                else user.lastRadiusBoost
+                            }
+
+                        val balance = if (it["balance"] == null) user.balance
+                        else max(user.balance, it["balance"] as Long)
+
+                        var visited = HashMap<String, Benchmark>()
+                        val visitedList =
+                            if (it["visited"] == null) ArrayList() else it["visited"] as ArrayList<HashMap<String, Any>>
+                        visitedList.forEach { x ->
+                            val pid = x["pid"] as String
+                            val lastVisited = if(x["lastVisited"] == null) Timestamp(0,0) else x["lastVisited"] as Timestamp
+                            val notify = if(x["notify"] == null) false else x["notify"] as Boolean
+
+                            visited[pid] = Benchmark.new(
+                                pid,
+                                x["name"] as String,
+                                x["location"] as GeoPoint,
+                                lastVisited,
+                                notify
+                            )
+                        }
+                        if (visited.isNotEmpty() && user.visited.isNotEmpty() &&
+                            visited.values.sortedByDescending { x -> x.lastVisited }[0].lastVisited < user.visited.values.sortedByDescending { x -> x.lastVisited }[0].lastVisited
+                        )
+                            visited = user.visited
+
+                        val friends =
+                            if (it["friends"] == null) ArrayList() else it["friends"] as ArrayList<String>
+
+                        user = User(
+                            user.uid,
+                            name,
+                            photoUrl,
+                            balance,
+                            lastRadiusBoost,
+                            visited,
+                            friends
+                        )
+                        user.update()
+                        home.loadMarkers(true)
+                    }
+                    .addOnFailureListener {
+                        Log.d(TAG, it.toString())
+                        user.push()
+                        home.loadMarkers(true)
+                    }.addOnCompleteListener {
+                        //home.balance.text = user.balance.toString()
+                        displayUserInfo()
+                        Log.d("user", "user switched; ${user.dump()}")
+                        switchingUser = false
+                    }
+            }
+        }.start()
     }
 
     private fun hideProfile(){

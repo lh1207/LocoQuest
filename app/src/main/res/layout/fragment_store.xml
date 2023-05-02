@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/store_bg"
+    android:background="@color/semi_transparent_white"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+<androidx.appcompat.widget.LinearLayoutCompat
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:layout_gravity="center"
+    android:padding="24dp"
+    android:layout_margin="24dp"
+    android:background="@drawable/rounded_corners_bg">
+
+    <ImageView
+        android:id="@+id/close_store_btn"
+        android:src="@drawable/close"
+        android:layout_gravity="end"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <ImageView
+        android:id="@+id/radius_booster_img"
+        android:src="@drawable/radius_booster"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:adjustViewBounds="true"
+        android:scaleType="fitCenter"
+        android:layout_marginStart="48dp"
+        android:layout_marginEnd="48dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <TextView
+        android:id="@+id/radius_booster_title"
+        android:text="@string/radius_boost"
+        android:textAlignment="center"
+        android:textSize="48sp"
+        app:layout_constraintTop_toBottomOf="@id/radius_booster_img"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <TextView
+        android:id="@+id/radius_booster_description"
+        android:text="@string/get_a_power_up_to_your_reach_and_collect_coins_from_further_away_for_5_minutes"
+        app:layout_constraintTop_toBottomOf="@id/radius_booster_title"
+        android:layout_marginTop="16dp"
+        android:textSize="24sp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <Button
+        android:id="@+id/radius_booster_btn_coin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/rounded_corners_bg"
+        android:drawableLeft="@drawable/coin"
+        android:text="@string/equip_radius_boost_now"/>
+
+    <Button
+        android:id="@+id/radius_booster_btn_ad"
+        android:text="Watch Ad Instead"
+        android:layout_marginTop="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+</androidx.appcompat.widget.LinearLayoutCompat>
+</FrameLayout>

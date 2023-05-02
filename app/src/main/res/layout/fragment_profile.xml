@@ -1,4 +1,9 @@
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:background="@color/semi_transparent_white"
+    android:id="@+id/profile_bg"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+<ScrollView
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/rounded_corners_bg"
@@ -154,3 +159,4 @@
 
     </RelativeLayout>
 </ScrollView>
+</FrameLayout>

@@ -3,6 +3,7 @@ package com.locoquest.app
 import androidx.room.TypeConverter
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.firebase.Timestamp
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.locoquest.app.dto.Benchmark
@@ -33,6 +34,17 @@ class Converters {
     fun toBenchmarks(value: String): HashMap<String, Benchmark> {
         val listType = object : TypeToken<HashMap<String, Benchmark>>() {}.type
         return gson.fromJson(value, listType)
+    }
+
+    @TypeConverter
+    fun toTimestamp(s: String): Timestamp{
+        val p = s.split(',')
+        return Timestamp(p[0].toLong(), p[1].toInt())
+    }
+
+    @TypeConverter
+    fun fromTimestamp(timestamp: Timestamp): String{
+        return "${timestamp.seconds},${timestamp.nanoseconds}"
     }
 
     companion object {

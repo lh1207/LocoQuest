@@ -6,12 +6,12 @@
     tools:context=".MainActivity">
 
     <FrameLayout
-        android:id="@+id/home_container"
+        android:id="@+id/primary_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
     <FrameLayout
-        android:id="@+id/profile_container"
+        android:id="@+id/secondary_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 

@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-
     <!-- Include required permissions for Google Mobile Ads to run. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <application
         android:allowBackup="true"
@@ -26,17 +27,24 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-3940256099942544~3347511713" />
-
+        <!--
+<meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-1408914358320849~9490576044" />
+        -->
         <activity
-            android:name=".AdMobActivity"
+            android:name=".RadiusBoosterAdMobActivity"
             android:exported="false"
-            android:label="@string/title_activity_ad_mob" />
-        <!-- Include the AdActivity configChanges and theme. -->
+            android:label="@string/title_activity_radius_booster_ad_mob" /> <!-- Include the AdActivity configChanges and theme. -->
         <activity
             android:name="com.google.android.gms.ads.AdActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|uiMode|screenSize|smallestScreenSize"
             android:exported="false"
             android:theme="@android:style/Theme.Translucent" />
+        <activity
+            android:name=".ExtraCoinAdMobActivity"
+            android:exported="false"
+            android:label="@string/title_activity_ad_mob" />
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -49,7 +57,8 @@
         <activity
             android:name=".FriendsActivity"
             android:exported="true"
-            android:parentActivityName=".MainActivity"></activity>
+            android:parentActivityName=".MainActivity" />
+        <receiver android:name=".NotifyReceiver" android:exported="false" android:enabled="true"/>
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
