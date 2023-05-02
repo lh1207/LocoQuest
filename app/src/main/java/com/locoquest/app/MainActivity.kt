@@ -8,6 +8,7 @@ remote server, and authenticating with Firebase.
 package com.locoquest.app
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
 import android.graphics.drawable.Drawable
@@ -15,6 +16,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.preference.PreferenceManager
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -67,8 +69,25 @@ class MainActivity : AppCompatActivity(), ISecondaryFragment, Profile.ProfileLis
         Log.d("event", "MainActivity.onCreate")
         setContentView(R.layout.activity_main)
 
-        home = Home(this)
-        supportFragmentManager.beginTransaction().replace(R.id.primary_container, home).commit()
+        // Check if the app has been launched before
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        val isFirstLaunch = prefs.getBoolean("is_first_launch", true)
+
+        if (isFirstLaunch) {
+            // Show the onboarding fragment
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.primary_container, Onboarding())
+                .commit()
+
+            // Set the flag to indicate that the app has been launched before
+            prefs.edit().putBoolean("is_first_launch", false).apply()
+        } else {
+            // Show the home fragment
+            home = Home(this)
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.primary_container, home)
+                .commit()
+        }
 
         // Firebase Sign-in
         oneTapClient = Identity.getSignInClient(this)
@@ -274,6 +293,18 @@ class MainActivity : AppCompatActivity(), ISecondaryFragment, Profile.ProfileLis
     override fun onMushroomClicked() {
         Log.d("event", "MainActivity.onMushroomClicked")
         supportFragmentManager.beginTransaction().replace(R.id.secondary_container, Store(this)).commit()
+    }
+
+    /**
+     * Description: see if app is launched for first time
+     */
+    private fun isFirstTimeAppLaunch(): Boolean {
+        val sharedPreferences = getSharedPreferences("my_preferences", Context.MODE_PRIVATE)
+        val isFirstTime = sharedPreferences.getBoolean("is_first_time", true)
+        if (isFirstTime) {
+            sharedPreferences.edit().putBoolean("is_first_time", false).apply()
+        }
+        return isFirstTime
     }
 
     private fun displayUserInfo() {
