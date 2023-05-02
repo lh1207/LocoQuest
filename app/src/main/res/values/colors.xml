@@ -12,4 +12,7 @@
     <color name="semi_transparent_blue">#80002BFF</color>
     <color name="clear">#00000000</color>
     <color name="blue">#0000FF</color>
+    <color name="blue_500">#2196F3</color>
+    <color name="green_500">#4CAF50</color>
+    <color name="orange_500">#FF9800</color>
 </resources>

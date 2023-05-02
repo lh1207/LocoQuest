@@ -1,0 +1,77 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <ImageView
+        android:id="@+id/iv_map"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:src="@drawable/map_image" />
+
+    <TextView
+        android:id="@+id/tv_map_description"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/map_description"
+        android:textSize="16sp"
+        android:padding="16dp" />
+
+    <ImageView
+        android:id="@+id/iv_benchmark_data"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:src="@drawable/benchmark_data_image" />
+
+    <TextView
+        android:id="@+id/tv_benchmark_data_description"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/benchmark_data_description"
+        android:textSize="16sp"
+        android:padding="16dp" />
+
+    <ImageView
+        android:id="@+id/iv_coin_collection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:src="@drawable/coin_collection_image" />
+
+    <TextView
+        android:id="@+id/tv_coin_collection_description"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/coin_collection_description"
+        android:textSize="16sp"
+        android:padding="16dp" />
+
+    <ImageView
+        android:id="@+id/iv_profile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:src="@drawable/profile_image" />
+
+    <TextView
+        android:id="@+id/tv_profile_description"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/profile_description"
+        android:textSize="16sp"
+        android:padding="16dp" />
+
+    <Button
+        android:id="@+id/btn_get_started"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/get_started"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="32dp"
+        android:textSize="18sp"
+        android:textColor="@android:color/white"
+        android:background="@drawable/rounded_button"
+        android:paddingLeft="32dp"
+        android:paddingRight="32dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="16dp" />
+
+</LinearLayout>

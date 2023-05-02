@@ -25,7 +25,7 @@ private const val TOAST_TEXT = "Test ads are being shown. " +
 class RadiusBoosterAdMobActivity : AppCompatActivity() {
 
     private var interstitialAd: RewardedAd? = null
-    private val TAG = "RadiusBoosterAdMobActiv"
+    private val TAG = "RadiusBoosterAdMobActivity"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
